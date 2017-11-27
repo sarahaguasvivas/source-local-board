@@ -7,4 +7,4 @@ This folder will contain the data used to demo the algorithm. These data files c
 * Data3rd -> 10 taps made in position (5, 15) from reference point
 * Data4th -> 10 taps made in position (10,15) from reference point
 
-testData.py-> Python code used originally to parse the data on real time.
+testData.py-> Python code used originally to parse the data from data file
