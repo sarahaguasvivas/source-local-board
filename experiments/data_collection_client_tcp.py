@@ -4,19 +4,89 @@ import sys
 import struct
 from collections import deque
 from multiprocessing import Pool, Queue
+import numpy as np
+from scipy import signal
 
-def start_connections(socket, q, count):
-    while True:
-        #Event Detection
-        #Read Data from Socket
-        #If event is detected, put data on queue
-        pass
+global BUFFER_SIZE= 32000
+global WINDOW_SIZE= 1000
 
-def eventDetection(q):
+def start_connections(sock, IP, PORT, count):
+###################################################
+# This function starts the TCP connection with the
+# sensor and calls the event detection function.
+# If there is an event, then it will put the window
+# of data in the parallel queue; if not, then it will
+# keep reading more data until there is an event.
+# This function is meant to run in parallel
+###################################################
+    try:
+        sock.connect((IP, PORT))
+    except:
+        print "sensor %s could not connect" % count
     return True
 
+def read_data_window(sock, q, count):
+    j=0
+    while True:
+        Window=deque([])
+        total_data=0
+        num_lines=0
+        try:
+            data=sock.recv(BUFFER_SIZE)
+            data=struct.unpack('100f', data)
+            total_data+=len(data)
+
+            if total_data>= BUFFER_SIZE:
+                num_lines+=1
+                total_data-=BUFFER_SIZE
+            #Keeping just a window of the data
+            if j<= WINDOW_SIZE:
+                Window.append(data)
+                j+=1
+            else:
+                Window.append(data)
+                Window.popleft()
+            #Determine if there was an event happening in the structure
+            if j>=WINDOW_SIZE:
+                yesno, impact_data= eventDetection(data)
+                if yesno==1:
+                    q.put((count, Window))
+                    manager(q)
+        except:
+            print "some data lost from sensor %s" % count
+
+    return True
+
+def eventDetection(sensor):
+#######################################################
+#           MODULE FOR ANOMALY DETECTION
+#------------------------------------------------------
+#   Using the Fast Wavelet Transform Algorithm to detect
+#   events. I will be using the level 1 decomposition 
+#   coefficient. 
+#######################################################
+    widths= np.arange(1,31)
+    sensor= np.array(sensor)
+    cwtmatr= signal.cwt(sensor.astype(int), signal.ricker, widths)
+
+    yesno=0
+    left= right
+    right= np.linalg.norm(cwtmatr[:, -1], np.inf)
+
+    if right-left >250 and np.abs(timenow-timelast)>2000:
+        yesno=1
+        timelast=timenow
+        sensdata=sensor[-1]
+    else:
+        yesno=0
+        sensdata= np.zeros_like(right)
+    return yesno, sensor_data
+
 def manager(q):
-  #get the data and  
+###############################################################################
+# Manager keeps reading the queue until it has data from more than 2 sensors, 
+# if it does, then it will call the source localization function. 
+###############################################################################
     while True:
         data = q.get() # it is going to wait until the queue gets put data
         source_localization()
@@ -52,8 +122,8 @@ def source_localization(q):
 #ESPlist[9].USB= 'DN03FM0W'
 #ESPlist[9].Posish= (18.25,0)
 
-BUFFER_SIZE = 1460
-WINDOW_SIZE= 1000
+#BUFFER_SIZE = 1460
+#WINDOW_SIZE= 1000
 
 if len(sys.argv) != 2:
 	print "python data_collection_client.py <FILENAME>"
@@ -84,22 +154,14 @@ if __name__ == "__main__":
     
     sockets= [socket.socket(socket.AF_INET, socket.SOCK_STREAM) for _ in range(10)]
     
-   # for sock in sockets:
-   #     try:
-   #         sock.connect((ESPIPlist[i], TCP_PORT))
-   #         print "sensor %s is connected" % i
-   #     except:
-   #         print "sensor %s could not connect" % i
-   #         continue
-
     q = Queue()
     pool = Pool(processes=len(sockets)+1)
-    #pool.apply_async(manager, args=(q,))
+     
     count=0
     for sock in sockets:
-        x = pool.apply_async(start_connections, args=(sock, q, ESPIPlist[count], TCP_PORT))
+        x = pool.apply_async(start_connections, args=(sock, q, ESPIPlist[count], TCP_PORT, count))
+        count+=1
         # if has data from 3 sensors
-        count+=1 
     pool.start()
     x.get()
     pool.join()
@@ -124,7 +186,7 @@ print "Ready for synch!"
 
 total_data = 0 
 num_lines = 0
- 
+str1= "%sf"% BUFFER_SIZE/4 #4 being the number of bytes in float 
 try:
     while True:
         for sock in sockets:
