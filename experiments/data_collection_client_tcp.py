@@ -5,6 +5,26 @@ import struct
 from collections import deque
 from multiprocessing import Pool, Queue
 
+def start_connections(socket, q, count):
+    while True:
+        #Event Detection
+        #Read Data from Socket
+        #If event is detected, put data on queue
+        pass
+
+def eventDetection(q):
+    return True
+
+def manager(q):
+  #get the data and  
+    while True:
+        data = q.get() # it is going to wait until the queue gets put data
+        source_localization()
+
+
+def source_localization(q):
+    return True
+
 #class ESP:
 #    def __init__(self, IP1, USB1, Posish1, Cardinal1):
 #        self.IP= IP1
@@ -63,15 +83,27 @@ if __name__ == "__main__":
     TCP_PORT = 5005
     
     sockets= [socket.socket(socket.AF_INET, socket.SOCK_STREAM) for _ in range(10)]
-    i=0
+    
+   # for sock in sockets:
+   #     try:
+   #         sock.connect((ESPIPlist[i], TCP_PORT))
+   #         print "sensor %s is connected" % i
+   #     except:
+   #         print "sensor %s could not connect" % i
+   #         continue
+
+    q = Queue()
+    pool = Pool(processes=len(sockets)+1)
+    #pool.apply_async(manager, args=(q,))
+    count=0
     for sock in sockets:
-        try:
-            sock.connect((ESPIPlist[i], TCP_PORT))
-            print "sensor %s is connected" % i
-        except:
-            print "sensor %s could not connect" % i
-            continue
-        i+=1
+        x = pool.apply_async(start_connections, args=(sock, q, ESPIPlist[count], TCP_PORT))
+        # if has data from 3 sensors
+        count+=1 
+    pool.start()
+    x.get()
+    pool.join()
+
 print "Ready for synch!"
 
 ######################################
