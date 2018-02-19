@@ -7,15 +7,17 @@ from multiprocessing import Pool, Manager, Value
 import numpy as np
 from scipy import signal
 
-
 global BUFFER_SIZE
 BUFFER_SIZE=32000
 global WINDOW_SIZE
 WINDOW_SIZE=300
 global NUM_SENSORS
 NUM_SENSORS= 11
+global STEP_SIZE
+STEP_SIZE= 1.0/1000.0  # 1/ 1kHz
 
 def read_data_window(ready_to_read, IP, TCP_PORT, q, count):
+    lastTime=0
     try:
         sock= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((IP, TCP_PORT))
@@ -23,16 +25,10 @@ def read_data_window(ready_to_read, IP, TCP_PORT, q, count):
         Window= deque([])
         while True:
             while ready_to_read.value:
-                total_data=0
-                num_lines=0
                 try:
                     data=sock.recv(BUFFER_SIZE)
                     str1= str(len(data)/4) + "f"
                     data= struct.unpack(str1, data)
-                    total_data+=len(data)
-                    if total_data >= BUFFER_SIZE:
-                        num_lines+=1
-                        total_data-=BUFFER_SIZE
                 # Keeping just a window of the data
                     if j <= WINDOW_SIZE:
                         q[count]=q[count][:1]
@@ -47,6 +43,7 @@ def read_data_window(ready_to_read, IP, TCP_PORT, q, count):
                         yesno= eventDetection(Window)
                         if yesno:
                             q[count]= q[count] + [Window]
+                            print count
                 except:
                     pass
     except:
@@ -66,14 +63,11 @@ def eventDetection(sensor):
 #   coefficient. 
 #######################################################
     sensor= np.array(sensor[0])
-    grad= np.gradient(sensor)
+    grad= (sensor[:-1] - sensor[1:])/STEP_SIZE
     yesno=False
-    print grad
-    if sensor.max()>0.3:
-        yesno=True
-        print "Tap!"
+    if max(grad)>70:
+            yesno=True
     return yesno
-
 
 ##############################################################################
 #       FUNCTIONS THAT WILL BE CALLED BY source_localization()
