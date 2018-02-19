@@ -3,7 +3,7 @@ import socket
 import sys
 import struct
 from collections import deque
-from multiprocessing import Pool, Queue
+from multiprocessing import Pool, Manager
 import numpy as np
 from scipy import signal
 
@@ -11,54 +11,51 @@ global BUFFER_SIZE
 BUFFER_SIZE= 32000
 global WINDOW_SIZE
 WINDOW_SIZE= 1000
+global ready_to_read
+ready_to_read=False
+NUM_SENSORS= 11
 
-def start_connections(sock, IP, PORT, count):
-###################################################
-# This function starts the TCP connection with the
-# sensor and calls the event detection function.
-# If there is an event, then it will put the window
-# of data in the parallel queue; if not, then it will
-# keep reading more data until there is an event.
-# This function is meant to run in parallel.
-###################################################
+def read_data_window(IP, TCP_PORT, q, count, ready_to_read=False):
     try:
-        sock.connect((IP, PORT))
+        
+        sock= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((IP, TCP_PORT))
+        print "sensor %s is connected" % count
+        j=0
+        while True:
+            while not ready_to_read:
+                pass    
+            Window=deque([])
+            total_data=0
+            num_lines=0
+            try:
+                data=sock.recv(BUFFER_SIZE)
+                str1= str(len(data)/4) + "f"
+                data=struct.unpack(str1, data)
+                total_data+=len(data)
+
+                if total_data >= BUFFER_SIZE:
+                    num_lines+=1
+                    total_data-=BUFFER_SIZE
+                # Keeping just a window of the data
+                if j <= WINDOW_SIZE:
+                    Window.append(data)
+                    j+=1
+                else:
+                    Window.append(data)
+                    Window.popleft()
+                # Determine if there was an event happening in the structure
+                if j >= WINDOW_SIZE:
+                    yesno, impact_data= eventDetection(Window)
+                    if yesno==1:
+        #   figure out how to keep the table organized
+        #                q.put((count, Window))
+            sock.close()
+            except:
+                print "some data lost from sensor %s" % count
     except:
         print "sensor %s could not connect" % count
-    return True
-
-def read_data_window(sock, q, count):
-    j=0
-    while True:
-        Window=deque([])
-        total_data=0
-        num_lines=0
-        try:
-            str1= "%sf" % BUFFER_SIZE/4 #4 being the number of bytes in float
-            data=sock.recv(BUFFER_SIZE)
-            data=struct.unpack(str1, data)
-            total_data+=len(data)
-
-            if total_data >= BUFFER_SIZE:
-                num_lines+=1
-                total_data-=BUFFER_SIZE
-            # Keeping just a window of the data
-            if j <= WINDOW_SIZE:
-                Window.append(data)
-                j+=1
-            else:
-                Window.append(data)
-                Window.popleft()
-            # Determine if there was an event happening in the structure
-            if j >= WINDOW_SIZE:
-                yesno, impact_data= eventDetection(data)
-                if yesno==1:
-                    q.put((count, Window))
-                    manager(q)
-        except:
-            print "some data lost from sensor %s" % count
-
-    return True
+    return None
 
 def eventDetection(sensor):
 #######################################################
@@ -79,6 +76,7 @@ def eventDetection(sensor):
     if right>250:
         yesno=1
         timelast=timenow
+        print "tap!"
     else:
         yesno=0
     return yesno, sensor
@@ -133,17 +131,6 @@ def J1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u):
 ##############################################################################
 
 
-def manager(q):
-###############################################################################
-# Manager keeps reading the queue until it has data from more than 2 sensors, 
-# if it does, then it will call the source localization function. 
-###############################################################################
-    while True:
-    # First check if the q has enough data readings
-        data = q.get() # it is going to wait until the queue gets put data
-        source_localization()
-    return True
-
 def source_localization(s1,s2,s3,u,x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol,maxit,epsilon,verbose):
     ###################################################################
     # MODULE FOR SOURCE LOCALIZATION (using Newton-Krylov)
@@ -197,31 +184,25 @@ def source_localization(s1,s2,s3,u,x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol,maxit,epsi
 #ESPlist[0].USB= 'DN03FM0A'
 #ESPlist[0].Posish= (12, 0)
 #ESPlist[1].USB= 'DN02YZBQ'
-#ESPlist[1].Posish= (12, 4.25)
+#ESPlist[1].Posish= (12, 4)
 #ESPlist[2].USB= 'DN03FLZJ'
-#ESPlist[2].Posish= (6.25, 0)
+#ESPlist[2].Posish= (6, 0)
 #ESPlist[3].USB= 'DN03FM0N'
 #ESPlist[3].Posish= (0,0)
 #ESPlist[4].USB= 'DN03FLZV'
-#ESPlist[4].Posish= (0, 4.25)
+#ESPlist[4].Posish= (0, 4)
 #ESPlist[5].USB= 'DN03FM0V'
-#ESPlist[5].Posish= (0, 8.25)
+#ESPlist[5].Posish= (0, 8)
 #ESPlist[6].USB= 'DN03ECYN'
-#ESPlist[6].Posish= (6.25, 4.25)
+#ESPlist[6].Posish= (6, 4)
 #ESPlist[7].USB= 'DN03FLZI'
-#ESPlist[7].Posish= (6.25, 8.25)
+#ESPlist[7].Posish= (6, 8)
 #ESPlist[8].USB= 'DN03FM0O'
-#ESPlist[8].Posish= (12, 8.25)
+#ESPlist[8].Posish= (12, 8)
 #ESPlist[9].USB= 'DN03FM0W'
-#ESPlist[9].Posish= (18.25,0)
-#ESPlist[10].Posish= (18.25, 8.25)
+#ESPlist[9].Posish= (18,0)
+#ESPlist[10].Posish= (18, 8)
 #ESPlist[10].USB= 'DN03ECZM'
-
-if len(sys.argv) != 2:
-    print "python data_collection_client.py <FILENAME>"
-    sys.exit()
-
-filename = sys.argv[1]
 
 ##########################################################
 #    CONNECTING SENSORS USING THREADED SOCKET SERVER
@@ -230,34 +211,45 @@ filename = sys.argv[1]
 print "Connecting to PZTs..."
 
 if __name__ == "__main__":
-
-    ESPIPlist= {}
-    ESPIPlist[0]= '192.168.50.129'
-    ESPIPlist[1]= '192.168.50.112'
-    ESPIPlist[2]= '192.168.50.45'
-    ESPIPlist[3]= '192.168.50.201'
-    ESPIPlist[4]= '192.168.50.173'
-    ESPIPlist[5]= '192.168.50.101'
-    ESPIPlist[6]='192.168.50.131'
-    ESPIPlist[7]='192.168.50.73'
-    ESPIPlist[8]='192.168.50.193'
-    ESPIPlist[9]='192.168.50.105'
-    ESPIPlist[10]='192.168.50.36'
-    TCP_PORT = 5005
+    manager=Manager()
+    q= manager.dict()
     
-    sockets= [socket.socket(socket.AF_INET, socket.SOCK_STREAM) for _ in range(11)] 
-    q = Queue()
-    pool = Pool(processes=len(sockets)+1)
+    for i in range(NUM_SENSORS):
+        q[i]=[]    
+
+    TCP_PORT = 5005
+    q[0]= q[0]+'192.168.50.129'
+    q[1]= q[1]+'192.168.50.112'
+    q[2]= q[2]+'192.168.50.45'
+    q[3]= q[3]+'192.168.50.201'
+    q[4]= q[4]+'192.168.50.173'
+    q[5]= q[5]+'192.168.50.101'
+    q[6]= q[6]+'192.168.50.131'
+    q[7]= q[7]+'192.168.50.73'
+    q[8]= q[8]+'192.168.50.193'
+    q[9]= q[9]+'192.168.50.105'
+    q[10]= q[10]+'192.168.50.36'
+    
+    # Position lists
+    q[0]=q[0]+[(12, 0)]
+    q[1]=q[1]+[(12, 4)]
+    q[2]=q[2]+[(6, 0)]
+    q[3]=q[3]+[(0,0)]
+    q[4]=q[4]+[(0, 4)]
+    q[5]=q[4]+[(0, 8)]
+    q[6]=q[6]+[(6, 4)]
+    q[7]=q[7]+[(6, 8)]
+    q[8]=q[8]+[(12, 8)]
+    q[9]=q[9]+[(18,0)]
+    q[10]=q[10]+[(18, 8)]
+
+    pool = Pool(processes=len(sockets))
      
-    count=0
-    for sock in sockets:
-        x = pool.apply_async(start_connections, args=(sock, q, ESPIPlist[count], TCP_PORT, count))
-        count+=1
-        # if has data from 3 sensors
-    pool.start()
+    for count in range(NUM_SENSORS):
+        x= pool.apply_async(read_data_window, args=(ESPIPlist[count], TCP_PORT, q, count, ready_to_read=False)) 
+        pool.close()
+    ready_to_read=True
 
-print "Ready for synch!"
-
-pool.close()
+pool.join()
 for sock in sockets:
     sock.close()
