@@ -3,58 +3,58 @@ import socket
 import sys
 import struct
 from collections import deque
-from multiprocessing import Pool, Manager
+from multiprocessing import Pool, Manager, Value
 import numpy as np
 from scipy import signal
 
 global BUFFER_SIZE
 BUFFER_SIZE= 32000
 global WINDOW_SIZE
-WINDOW_SIZE= 1000
-global ready_to_read
-ready_to_read=False
+WINDOW_SIZE= 500
+global NUM_SENSORS
 NUM_SENSORS= 11
 
-def read_data_window(IP, TCP_PORT, q, count, ready_to_read=False):
+def read_data_window(ready_to_read, IP, TCP_PORT, q, count):
     try:
-        
         sock= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((IP, TCP_PORT))
-        print "sensor %s is connected" % count
         j=0
         while True:
-            while not ready_to_read:
-                pass    
-            Window=deque([])
-            total_data=0
-            num_lines=0
-            try:
-                data=sock.recv(BUFFER_SIZE)
-                str1= str(len(data)/4) + "f"
-                data=struct.unpack(str1, data)
-                total_data+=len(data)
-
-                if total_data >= BUFFER_SIZE:
-                    num_lines+=1
-                    total_data-=BUFFER_SIZE
+            while ready_to_read.value:
+                Window=deque([])
+                total_data=0
+                num_lines=0
+                try:
+                    data=sock.recv(BUFFER_SIZE)
+                    str1= str(len(data)/4) + "f"
+                    data= struct.unpack(str1, data)
+                    print len(data)
+                    total_data+=len(data)
+                    print "%s total data from sensor %s"%(total_data, count)
+                    sys.stdout.flush()
+                    if total_data >= BUFFER_SIZE:
+                        num_lines+=1
+                        total_data-=BUFFER_SIZE
                 # Keeping just a window of the data
-                if j <= WINDOW_SIZE:
-                    Window.append(data)
-                    j+=1
-                else:
-                    Window.append(data)
-                    Window.popleft()
+                    if j <= WINDOW_SIZE:
+                        q[count]=q[count][:1]
+                        Window.append(data[-1-WINDOW_SIZE:-1])
+                        j+=len(data)
+                    else:
+                        Window.append(data[-1-WINDOW_SIZE:-1])
+                # Popleft will remove all of the data added before
+                        Window.popleft()
                 # Determine if there was an event happening in the structure
-                if j >= WINDOW_SIZE:
-                    yesno, impact_data= eventDetection(Window)
-                    if yesno==1:
-        #   figure out how to keep the table organized
-        #                q.put((count, Window))
-            sock.close()
-            except:
-                print "some data lost from sensor %s" % count
+                    if j >= WINDOW_SIZE:
+                        yesno= eventDetection(Window)
+                        if yesno==1:
+                # Figure out how to keep the table organized
+                           q[count]= q[count] + [Window]
+                    sock.close()
+                except:
+                    print "some data lost from sensor %s" % count
     except:
-        print "sensor %s could not connect" % count
+        print "sensor %s disconnect" % count
     return None
 
 def eventDetection(sensor):
@@ -65,6 +65,8 @@ def eventDetection(sensor):
 #   events. I will be using the level 1 decomposition 
 #   coefficient. 
 #######################################################
+    print "Tap?"
+    sys.stdout.flush()
     widths= np.arange(1,31)
     sensor= np.array(sensor)
     cwtmatr= signal.cwt(sensor.astype(int), signal.ricker, widths)
@@ -79,7 +81,7 @@ def eventDetection(sensor):
         print "tap!"
     else:
         yesno=0
-    return yesno, sensor
+    return yesno
 
 
 ##############################################################################
@@ -213,22 +215,23 @@ print "Connecting to PZTs..."
 if __name__ == "__main__":
     manager=Manager()
     q= manager.dict()
-    
+
+    ESPIPlist={}
     for i in range(NUM_SENSORS):
         q[i]=[]    
 
     TCP_PORT = 5005
-    q[0]= q[0]+'192.168.50.129'
-    q[1]= q[1]+'192.168.50.112'
-    q[2]= q[2]+'192.168.50.45'
-    q[3]= q[3]+'192.168.50.201'
-    q[4]= q[4]+'192.168.50.173'
-    q[5]= q[5]+'192.168.50.101'
-    q[6]= q[6]+'192.168.50.131'
-    q[7]= q[7]+'192.168.50.73'
-    q[8]= q[8]+'192.168.50.193'
-    q[9]= q[9]+'192.168.50.105'
-    q[10]= q[10]+'192.168.50.36'
+    ESPIPlist[0]='192.168.50.129'
+    ESPIPlist[1]='192.168.50.112'
+    ESPIPlist[2]='192.168.50.45'
+    ESPIPlist[3]='192.168.50.201'
+    ESPIPlist[4]='192.168.50.173'
+    ESPIPlist[5]='192.168.50.101'
+    ESPIPlist[6]='192.168.50.131'
+    ESPIPlist[7]='192.168.50.73'
+    ESPIPlist[8]='192.168.50.193'
+    ESPIPlist[9]='192.168.50.105'
+    ESPIPlist[10]='192.168.50.36'
     
     # Position lists
     q[0]=q[0]+[(12, 0)]
@@ -243,13 +246,12 @@ if __name__ == "__main__":
     q[9]=q[9]+[(18,0)]
     q[10]=q[10]+[(18, 8)]
 
-    pool = Pool(processes=len(sockets))
-     
+    pool = Pool(processes=NUM_SENSORS)
+    ready_to_read= manager.Value('ready_to_read', False)
+ 
     for count in range(NUM_SENSORS):
-        x= pool.apply_async(read_data_window, args=(ESPIPlist[count], TCP_PORT, q, count, ready_to_read=False)) 
-        pool.close()
-    ready_to_read=True
+        x= pool.apply_async(read_data_window, args=(ready_to_read, ESPIPlist[count], TCP_PORT, q, count)) 
+    pool.close()
+    ready_to_read.value= True
 
-pool.join()
-for sock in sockets:
-    sock.close()
+    pool.join()
