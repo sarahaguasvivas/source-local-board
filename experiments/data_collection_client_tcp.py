@@ -7,10 +7,11 @@ from multiprocessing import Pool, Manager, Value
 import numpy as np
 from scipy import signal
 
+
 global BUFFER_SIZE
-BUFFER_SIZE= 32000
+BUFFER_SIZE=32000
 global WINDOW_SIZE
-WINDOW_SIZE= 500
+WINDOW_SIZE=300
 global NUM_SENSORS
 NUM_SENSORS= 11
 
@@ -19,42 +20,41 @@ def read_data_window(ready_to_read, IP, TCP_PORT, q, count):
         sock= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((IP, TCP_PORT))
         j=0
+        Window= deque([])
         while True:
             while ready_to_read.value:
-                Window=deque([])
                 total_data=0
                 num_lines=0
                 try:
                     data=sock.recv(BUFFER_SIZE)
                     str1= str(len(data)/4) + "f"
                     data= struct.unpack(str1, data)
-                    print len(data)
                     total_data+=len(data)
-                    print "%s total data from sensor %s"%(total_data, count)
-                    sys.stdout.flush()
                     if total_data >= BUFFER_SIZE:
                         num_lines+=1
                         total_data-=BUFFER_SIZE
                 # Keeping just a window of the data
                     if j <= WINDOW_SIZE:
                         q[count]=q[count][:1]
-                        Window.append(data[-1-WINDOW_SIZE:-1])
+                        Window.append(data)
                         j+=len(data)
                     else:
-                        Window.append(data[-1-WINDOW_SIZE:-1])
+                        Window.append(data)
                 # Popleft will remove all of the data added before
                         Window.popleft()
                 # Determine if there was an event happening in the structure
                     if j >= WINDOW_SIZE:
                         yesno= eventDetection(Window)
-                        if yesno==1:
-                # Figure out how to keep the table organized
-                           q[count]= q[count] + [Window]
-                    sock.close()
+                        if yesno:
+                            q[count]= q[count] + [Window]
                 except:
-                    print "some data lost from sensor %s" % count
+                    pass
     except:
-        print "sensor %s disconnect" % count
+        pass
+    
+    if 'sock' in locals() or 'sock' in globals():
+        sock.close()
+        print "sensor %s unplugged" % count
     return None
 
 def eventDetection(sensor):
@@ -65,22 +65,13 @@ def eventDetection(sensor):
 #   events. I will be using the level 1 decomposition 
 #   coefficient. 
 #######################################################
-    print "Tap?"
-    sys.stdout.flush()
-    widths= np.arange(1,31)
-    sensor= np.array(sensor)
-    cwtmatr= signal.cwt(sensor.astype(int), signal.ricker, widths)
-
-    yesno=0
-    left= right
-    right= np.linalg.norm(cwtmatr[:, -1], np.inf)
-
-    if right>250:
-        yesno=1
-        timelast=timenow
-        print "tap!"
-    else:
-        yesno=0
+    sensor= np.array(sensor[0])
+    grad= np.gradient(sensor)
+    yesno=False
+    print grad
+    if sensor.max()>0.3:
+        yesno=True
+        print "Tap!"
     return yesno
 
 
@@ -177,35 +168,6 @@ def source_localization(s1,s2,s3,u,x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol,maxit,epsi
             raise RuntimeError('Newton Raphson failed to converge: {:d}'.format(info)) 
     return u,i
 
-#class ESP:
-#    def __init__(self, IP1, USB1, Posish1, Cardinal1):
-#        self.IP= IP1
-#        self.USB= USB1
-#        self.Posish= Posish1
-#        self.Cardinal= Cardinal1
-#ESPlist[0].USB= 'DN03FM0A'
-#ESPlist[0].Posish= (12, 0)
-#ESPlist[1].USB= 'DN02YZBQ'
-#ESPlist[1].Posish= (12, 4)
-#ESPlist[2].USB= 'DN03FLZJ'
-#ESPlist[2].Posish= (6, 0)
-#ESPlist[3].USB= 'DN03FM0N'
-#ESPlist[3].Posish= (0,0)
-#ESPlist[4].USB= 'DN03FLZV'
-#ESPlist[4].Posish= (0, 4)
-#ESPlist[5].USB= 'DN03FM0V'
-#ESPlist[5].Posish= (0, 8)
-#ESPlist[6].USB= 'DN03ECYN'
-#ESPlist[6].Posish= (6, 4)
-#ESPlist[7].USB= 'DN03FLZI'
-#ESPlist[7].Posish= (6, 8)
-#ESPlist[8].USB= 'DN03FM0O'
-#ESPlist[8].Posish= (12, 8)
-#ESPlist[9].USB= 'DN03FM0W'
-#ESPlist[9].Posish= (18,0)
-#ESPlist[10].Posish= (18, 8)
-#ESPlist[10].USB= 'DN03ECZM'
-
 ##########################################################
 #    CONNECTING SENSORS USING THREADED SOCKET SERVER
 ##########################################################
@@ -239,7 +201,7 @@ if __name__ == "__main__":
     q[2]=q[2]+[(6, 0)]
     q[3]=q[3]+[(0,0)]
     q[4]=q[4]+[(0, 4)]
-    q[5]=q[4]+[(0, 8)]
+    q[5]=q[5]+[(0, 8)]
     q[6]=q[6]+[(6, 4)]
     q[7]=q[7]+[(6, 8)]
     q[8]=q[8]+[(12, 8)]
