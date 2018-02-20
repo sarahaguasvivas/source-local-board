@@ -50,14 +50,16 @@ def read_data_window(ready_to_read,ready_to_source,num_events,num_estimations, I
                             q[count]= q[count] + [Window]
                             q[count]= q[count] + [lastTime]
                             if num_events.value>=3:
-                               #call the breeding function
-                                x1, x2, x3, y1, y2, y3, t12, t23, t31= Breeding(q, count)
-                                print "here"
-                               #call the source_localization function
-                                #start this process in parallel
-        #                        u, _=source_localization(u,x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol,maxit,epsilon,verbose)
-                                num_estimations.value+=1
-                               # q[count]= q[count]+u                
+                                try:#call the breeding function
+                                    x1, x2, x3, y1, y2, y3, t12, t23, t31= Breeding(q, count)
+                                    print "done breeding"
+                                    #call the source_localization function
+                                    #start this process in parallel
+        #                           u, _=source_localization(u,x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol,maxit,epsilon,verbose)
+                                    num_estimations.value+=1
+                                    # q[count]= q[count]+u 
+                                except:
+                                    print "Breeding failed on sensor %s" % count               
                 except:
                     pass
     except:
@@ -111,17 +113,16 @@ def Breeding(q, count):
     pair = np.random.choice(candidates, 2, replace=False, p=prob)
     x2,y2= q[pair[0]][0]
     x3,y3= q[pair[1]][0]
-    print q[count][1]
-    ss1= np.array(q[count][1])
-    ss2= np.array(q[pair[0]][1])
-    ss3= np.array(q[pair[1]][1])
-    t12= np.amax(np.correlate(np.asarray(ss1, dtype=np.float64), 
-                    np.asarray(ss1, dtype=np.float64), mode= 'full'))*STEP_SIZE 
-    t23= np.amax(np.correlate(np.asarray(ss2, dtype=np.float64), 
-                    np.asarray(ss3, dtype=np.float64), mode= 'full'))*STEP_SIZE     
-    t31= np.amax(np.correlate(np.asarray(ss3, dtype=np.float64), 
-                    np.asarray(ss1, dtype=np.float64), mode= 'full'))*STEP_SIZE 
-    print "here"
+    
+    ss1= list(q[count][1])
+    ss2= list(q[pair[0]][1])
+    ss3= list(q[pair[1]][1])
+    
+    t12= np.correlate(np.asarray(ss1, dtype=np.float64), np.asarray(ss2, dtype=np.float64))
+    t23= np.correlate(np.asarray(ss2, dtype=np.float64),np.asarray(ss3, dtype=np.float64))
+    t31= np.correlate(np.asarray(ss3, dtype=np.float64),np.asarray(ss1, dtype=np.float64))
+
+    print "herehere %s" % t12
     return x1, x2, x3, y1, y2, y3, t12, t23, t31
 
 ##############################################################################
