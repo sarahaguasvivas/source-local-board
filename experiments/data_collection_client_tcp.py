@@ -6,6 +6,7 @@ from collections import deque
 from multiprocessing import Pool, Manager, Value
 import numpy as np
 from scipy import signal
+import time
 
 global BUFFER_SIZE
 BUFFER_SIZE=32000
@@ -16,13 +17,15 @@ NUM_SENSORS= 11
 global STEP_SIZE
 STEP_SIZE= 1.0/1000.0  # 1/ 1kHz
 
-def read_data_window(ready_to_read, IP, TCP_PORT, q, count):
+def read_data_window(ready_to_read,ready_to_source,num_events,num_estimations, IP, TCP_PORT, q, count):
+#    pool1= Pool(processes=1)
     lastTime=0
     try:
         sock= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((IP, TCP_PORT))
         j=0
         Window= deque([])
+        lastTime=0
         while True:
             while ready_to_read.value:
                 try:
@@ -35,15 +38,25 @@ def read_data_window(ready_to_read, IP, TCP_PORT, q, count):
                         Window.append(data)
                         j+=len(data)
                     else:
+                        q[count]=q[count][:1]
                         Window.append(data)
                 # Popleft will remove all of the data added before
                         Window.popleft()
                 # Determine if there was an event happening in the structure
                     if j >= WINDOW_SIZE:
-                        yesno= eventDetection(Window)
+                        yesno,lastTime= eventDetection(Window, lastTime)
                         if yesno:
+                            num_events.value+=1
                             q[count]= q[count] + [Window]
-                            print count
+                            q[count]= q[count] + [lastTime]
+                            if num_events.value>=3:
+                               #call the breeding function
+                                x1, x2, x3, y1, y2, y3, t12, t23, t31= Breeding(q, count)
+                               #call the source_localization function
+                                #start this process in parallel
+        #                        u, _=source_localization(u,x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol,maxit,epsilon,verbose)
+                                num_estimations.value+=1
+                               # q[count]= q[count]+u                
                 except:
                     pass
     except:
@@ -54,7 +67,7 @@ def read_data_window(ready_to_read, IP, TCP_PORT, q, count):
         print "sensor %s unplugged" % count
     return None
 
-def eventDetection(sensor):
+def eventDetection(sensor, lastTime):
 #######################################################
 #           MODULE FOR ANOMALY DETECTION
 #------------------------------------------------------
@@ -66,8 +79,55 @@ def eventDetection(sensor):
     grad= (sensor[:-1] - sensor[1:])/STEP_SIZE
     yesno=False
     if max(grad)>70:
+        newTime= time.clock()
+        if abs(lastTime-newTime)>0.01:
             yesno=True
-    return yesno
+            lastTime=newTime
+    return yesno, lastTime
+
+def Breeding(q, count):
+#######################################################
+#           MODULE FOR SENSOR BREEDING
+#------------------------------------------------------
+#   Here is where the random sampling will occur depen- 
+#   ding on who detected an event first. This information
+#   will be used as the "fitness" value.
+#
+#######################################################
+    candidates=[]
+    potential=[]
+    enough= True
+    while enough==True:
+        for i in range(len(q)):
+            try:
+                if i != count:
+                    u= q[i][2]
+                    candidates.append(i)
+                    potential.append(1.0/u) 
+            except:
+                pass
+
+        x1, y1= q[count][0]
+        p = potential/sum(potential)
+        print p
+        pair = np.random.choice(candidates, 2, replace=False, p=p)
+        print "here1"
+        x2,y2= q[pair[0]][0]
+        x3,y3= q[pair[1]][0]
+        
+        ss1= np.array(q[count][1])
+        ss2= np.array(q[pair[0]][1])
+        ss3= np.array(q[pair[1]][1])
+        print "here2"
+        t12= np.amax(np.correlate(np.asarray(ss1, dtype=np.float64), 
+                    np.asarray(ss1, dtype=np.float64), mode= 'full'))*STEP_SIZE 
+        t23= np.amax(np.correlate(np.asarray(ss2, dtype=np.float64), 
+                    np.asarray(ss3, dtype=np.float64), mode= 'full'))*STEP_SIZE     
+        t31= np.amax(np.correlate(np.asarray(ss3, dtype=np.float64), 
+                    np.asarray(ss1, dtype=np.float64), mode= 'full'))*STEP_SIZE 
+
+        print t12
+    return x1, x2, x3, y1, y2, y3, t12, t23, t31
 
 ##############################################################################
 #       FUNCTIONS THAT WILL BE CALLED BY source_localization()
@@ -118,7 +178,7 @@ def J1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u):
 ##############################################################################
 
 
-def source_localization(s1,s2,s3,u,x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol,maxit,epsilon,verbose):
+def source_localization(u,x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol,maxit,epsilon,verbose):
     ###################################################################
     # MODULE FOR SOURCE LOCALIZATION (using Newton-Krylov)
     # -----------------------------------------------------------------
@@ -139,7 +199,7 @@ def source_localization(s1,s2,s3,u,x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol,maxit,epsi
             return (F1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u + epsilon*v)  - 
                     Fu) / epsilon
     
-        Ju = splinalg.LinearOperator((len(Fu),len(u)), matvec=Ju_fd)
+      #  Ju = splinalg.LinearOperator((len(Fu),len(u)), matvec=Ju_fd)
     
         du, info = splinalg.gmres(JJ, Fu, x0=u, tol=1e-5, restart=10)
         
@@ -204,9 +264,12 @@ if __name__ == "__main__":
 
     pool = Pool(processes=NUM_SENSORS)
     ready_to_read= manager.Value('ready_to_read', False)
- 
+    ready_to_read.value= False
+    ready_to_source= manager.Value('ready_to_source', False)
+    num_events= manager.Value('num_events', 0) 
+    num_estimations= manager.Value('num_estimations',0)
     for count in range(NUM_SENSORS):
-        x= pool.apply_async(read_data_window, args=(ready_to_read, ESPIPlist[count], TCP_PORT, q, count)) 
+        x= pool.apply_async(read_data_window, args=(ready_to_read,ready_to_source,num_events,num_estimations, ESPIPlist[count], TCP_PORT, q, count)) 
     pool.close()
     ready_to_read.value= True
 
