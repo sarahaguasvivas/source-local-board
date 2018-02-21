@@ -5,7 +5,7 @@ import struct
 from collections import deque
 from multiprocessing import Pool, Manager, Value
 import numpy as np
-from scipy import signal
+#from scipy import signal
 import time
 
 global BUFFER_SIZE
@@ -49,13 +49,17 @@ def read_data_window(ready_to_read,ready_to_source,num_events,num_estimations, I
                             num_events.value+=1
                             q[count]= q[count] + [Window]
                             q[count]= q[count] + [lastTime]
+                    
                             if num_events.value>=3:
-                                try:#call the breeding function
+                                try:
+                                    #call the breeding function
                                     x1, x2, x3, y1, y2, y3, t12, t23, t31= Breeding(q, count)
-                                    print "done breeding"
                                     #call the source_localization function
+
                                     #start this process in parallel
-        #                           u, _=source_localization(u,x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol,maxit,epsilon,verbose)
+                                    
+                                    u = source_localization([.1, .1],x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol=1e-25,maxit=50,epsilon=1e-8,verbose=False)
+                                    print u
                                     num_estimations.value+=1
                                     # q[count]= q[count]+u 
                                 except:
@@ -81,7 +85,7 @@ def eventDetection(sensor, lastTime):
     sensor= np.array(sensor[0])
     grad= (sensor[:-1] - sensor[1:])/STEP_SIZE
     yesno=False
-    if max(grad)>70:
+    if max(grad)>65:
         newTime= time.clock()
         if abs(lastTime-newTime)>0.01:
             yesno=True
@@ -113,16 +117,14 @@ def Breeding(q, count):
     pair = np.random.choice(candidates, 2, replace=False, p=prob)
     x2,y2= q[pair[0]][0]
     x3,y3= q[pair[1]][0]
+    ss1= q[count][1]
+    ss2= q[pair[0]][1]
+    ss3= q[pair[1]][1]
     
-    ss1= list(q[count][1])
-    ss2= list(q[pair[0]][1])
-    ss3= list(q[pair[1]][1])
-    
-    t12= np.correlate(np.asarray(ss1, dtype=np.float64), np.asarray(ss2, dtype=np.float64))
-    t23= np.correlate(np.asarray(ss2, dtype=np.float64),np.asarray(ss3, dtype=np.float64))
-    t31= np.correlate(np.asarray(ss3, dtype=np.float64),np.asarray(ss1, dtype=np.float64))
+    t12= np.correlate(np.asarray(ss1, dtype=np.float64).flatten(),np.asarray(ss2, dtype=np.float64).flatten())
+    t23= np.correlate(np.asarray(ss2, dtype=np.float64).flatten(),np.asarray(ss3, dtype=np.float64).flatten())
+    t31= np.correlate(np.asarray(ss3, dtype=np.float64).flatten(),np.asarray(ss1, dtype=np.float64).flatten())
 
-    print "herehere %s" % t12
     return x1, x2, x3, y1, y2, y3, t12, t23, t31
 
 ##############################################################################
@@ -182,10 +184,11 @@ def source_localization(u,x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol,maxit,epsilon,verbo
     # Brown (https://github.com/cucs-numpde/class). This is the routine
     #  that will do the source localization given three sensor signals
     ###################################################################
+    # print "%s %s %s %s %s %s %s %s %s" %(x1, x2, x3, y1, y2, y3, t12, t23, t31) 
     u0= u.copy()
     Fu= F1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u)
     JJ= J1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u)
-    
+    print "here" 
     norm0= np.linalg.norm(Fu)
     enorm_last= np.linalg.norm(u - np.array([1,1],dtype= np.float64))
     
@@ -216,7 +219,7 @@ def source_localization(u,x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol,maxit,epsilon,verbo
             break
         if np.isnan(norm):
             raise RuntimeError('Newton Raphson failed to converge: {:d}'.format(info)) 
-    return u,i
+    return u
 
 ##########################################################
 #    CONNECTING SENSORS USING THREADED SOCKET SERVER
@@ -246,17 +249,17 @@ if __name__ == "__main__":
     ESPIPlist[10]='192.168.50.36'
     
     # Position lists
-    q[0]=q[0]+[(12, 0)]
-    q[1]=q[1]+[(12, 4)]
-    q[2]=q[2]+[(6, 0)]
-    q[3]=q[3]+[(0,0)]
-    q[4]=q[4]+[(0, 4)]
-    q[5]=q[5]+[(0, 8)]
-    q[6]=q[6]+[(6, 4)]
-    q[7]=q[7]+[(6, 8)]
-    q[8]=q[8]+[(12, 8)]
-    q[9]=q[9]+[(18,0)]
-    q[10]=q[10]+[(18, 8)]
+    q[0]=q[0]+[(12.0, 0.0)]
+    q[1]=q[1]+[(12.0, 4.0)]
+    q[2]=q[2]+[(6.0, 0.0)]
+    q[3]=q[3]+[(0.0,0.0)]
+    q[4]=q[4]+[(0.0, 4.0)]
+    q[5]=q[5]+[(0.0, 8.0)]
+    q[6]=q[6]+[(6.0, 4.0)]
+    q[7]=q[7]+[(6.0, 8.0)]
+    q[8]=q[8]+[(12.0, 8.0)]
+    q[9]=q[9]+[(18.0,0.0)]
+    q[10]=q[10]+[(18.0, 8.0)]
 
     pool = Pool(processes=NUM_SENSORS)
     ready_to_read= manager.Value('ready_to_read', False)
