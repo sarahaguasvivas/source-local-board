@@ -7,6 +7,10 @@ from multiprocessing import Pool, Manager, Value
 import numpy as np
 #from scipy import signal
 import time
+import scipy
+from sympy import *
+import scipy.sparse.linalg as splinalg
+import copy
 
 global BUFFER_SIZE
 BUFFER_SIZE=32000
@@ -18,7 +22,7 @@ global STEP_SIZE
 STEP_SIZE= 1.0/1000.0  # 1/ 1kHz
 
 def read_data_window(ready_to_read,ready_to_source,num_events,num_estimations, IP, TCP_PORT, q, count):
-#    pool1= Pool(processes=1)
+
     lastTime=0
     try:
         sock= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -49,7 +53,7 @@ def read_data_window(ready_to_read,ready_to_source,num_events,num_estimations, I
                             num_events.value+=1
                             q[count]= q[count] + [Window]
                             q[count]= q[count] + [lastTime]
-                    
+                            
                             if num_events.value>=3:
                                 try:
                                     #call the breeding function
@@ -57,13 +61,13 @@ def read_data_window(ready_to_read,ready_to_source,num_events,num_estimations, I
                                     #call the source_localization function
 
                                     #start this process in parallel
-                                    
-                                    u = source_localization([.1, .1],x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol=1e-25,maxit=50,epsilon=1e-8,verbose=False)
+                                    u, i = source_localization([.1, .1],float(x1),float(x2),float(x3),float(y1),float(y2),float(y3),float(t12),float(t23),float(t31),rtol=1e-15,maxit=30,epsilon=1e-8)
                                     print u
+                                    print i
+                                    q[count]= q[count]+ [u]
                                     num_estimations.value+=1
-                                    # q[count]= q[count]+u 
                                 except:
-                                    print "Breeding failed on sensor %s" % count               
+                                    print "Breeding/Source Localization failed on sensor %s" %count               
                 except:
                     pass
     except:
@@ -147,7 +151,6 @@ def F1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u):
     y0= Symbol('y0')
     dFdx = (FFF1(x1, x2, x3, y1, y2, y3, t23, t12, t31, x0,y0)).diff(x0)
     dFdy = (FFF1(x1, x2, x3, y1, y2, y3, t23, t12, t31, x0,y0)).diff(y0)
-    
     dx= lambdify((x0,y0),dFdx)
     dy= lambdify((x0,y0),dFdy)
     return np.array([dx(u[0],u[1]),dy(u[0],u[1])])
@@ -175,8 +178,7 @@ def J1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u):
 
 ##############################################################################
 
-
-def source_localization(u,x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol,maxit,epsilon,verbose):
+def source_localization(u0,x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol,maxit,epsilon):
     ###################################################################
     # MODULE FOR SOURCE LOCALIZATION (using Newton-Krylov)
     # -----------------------------------------------------------------
@@ -184,48 +186,38 @@ def source_localization(u,x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol,maxit,epsilon,verbo
     # Brown (https://github.com/cucs-numpde/class). This is the routine
     #  that will do the source localization given three sensor signals
     ###################################################################
-    # print "%s %s %s %s %s %s %s %s %s" %(x1, x2, x3, y1, y2, y3, t12, t23, t31) 
-    u0= u.copy()
+#    print "%s %s %s %s %s %s %s %s %s" %(x1, x2, x3, y1, y2, y3, t12, t23, t31) 
+    u= copy.copy(u0)
     Fu= F1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u)
-    JJ= J1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u)
-    print "here" 
+    
     norm0= np.linalg.norm(Fu)
     enorm_last= np.linalg.norm(u - np.array([1,1],dtype= np.float64))
-    
+ 
     for i in range(maxit):
-        
-        def Ju_fd(v): # Preconditioning the Jacobian using Krylov 
-            return (F1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u + epsilon*v)  - 
-                    Fu) / epsilon
-    
-      #  Ju = splinalg.LinearOperator((len(Fu),len(u)), matvec=Ju_fd)
-    
-        du, info = splinalg.gmres(JJ, Fu, x0=u, tol=1e-5, restart=10)
-        
+        def Ju_fd(v): 
+           # Preconditioning the Jacobian using Krylov 
+           return (F1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u + epsilon*v)  - Fu) / epsilon
+      
+        Ja= splinalg.LinearOperator((len(Fu), len(u)), matvec=Ju_fd) 
+     
+        du, info = splinalg.gmres(Ja, Fu)
+       
         if info != 0:
             raise RuntimeError('GMRES failed to converge: {:d}'.format(info))
-        
         u -= du
-
+              
         Fu= F1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u)
         norm= np.linalg.norm(Fu)
-        
-        if verbose:
-            enorm= np.linalg.norm(u - np.array([1,1]))
-            print('Newton {:d} anorm {:6.2e} rnorm {:6.2e} eratio {:6.2f}'.
-                  format(i+1, norm, norm/norm0, enorm/enorm_last**2))
-            enorm_last= enorm
+                 
         if norm < rtol*norm0:
             break
-        if np.isnan(norm):
-            raise RuntimeError('Newton Raphson failed to converge: {:d}'.format(info)) 
-    return u
+    return u, i
 
 ##########################################################
 #    CONNECTING SENSORS USING THREADED SOCKET SERVER
 ##########################################################
 
-print "Connecting to PZTs..."
+print("Connecting to PZTs...")
 
 if __name__ == "__main__":
     manager=Manager()
