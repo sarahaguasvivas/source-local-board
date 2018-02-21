@@ -61,7 +61,7 @@ def read_data_window(ready_to_read,ready_to_source,num_events,num_estimations, I
                                     #call the source_localization function
 
                                     #start this process in parallel
-                                    u, i = source_localization([.1, .1],float(x1),float(x2),float(x3),float(y1),float(y2),float(y3),float(t12),float(t23),float(t31),rtol=1e-15,maxit=30,epsilon=1e-8)
+                                    u, i = source_localization(np.array([5., 5.]),x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol=1e-8,maxit=50,epsilon=1e-9)
                                     print u
                                     print i
                                     q[count]= q[count]+ [u]
@@ -129,7 +129,7 @@ def Breeding(q, count):
     t23= np.correlate(np.asarray(ss2, dtype=np.float64).flatten(),np.asarray(ss3, dtype=np.float64).flatten())
     t31= np.correlate(np.asarray(ss3, dtype=np.float64).flatten(),np.asarray(ss1, dtype=np.float64).flatten())
 
-    return x1, x2, x3, y1, y2, y3, t12, t23, t31
+    return float(x1), float(x2), float(x3), float(y1), float(y2), float(y3), float(t12), float(t23), float(t31)
 
 ##############################################################################
 #       FUNCTIONS THAT WILL BE CALLED BY source_localization()
@@ -186,16 +186,15 @@ def source_localization(u0,x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol,maxit,epsilon):
     # Brown (https://github.com/cucs-numpde/class). This is the routine
     #  that will do the source localization given three sensor signals
     ###################################################################
-#    print "%s %s %s %s %s %s %s %s %s" %(x1, x2, x3, y1, y2, y3, t12, t23, t31) 
     u= copy.copy(u0)
     Fu= F1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u)
     
     norm0= np.linalg.norm(Fu)
     enorm_last= np.linalg.norm(u - np.array([1,1],dtype= np.float64))
- 
+
+    # Newton Krylov with GMRES 
     for i in range(maxit):
         def Ju_fd(v): 
-           # Preconditioning the Jacobian using Krylov 
            return (F1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u + epsilon*v)  - Fu) / epsilon
       
         Ja= splinalg.LinearOperator((len(Fu), len(u)), matvec=Ju_fd) 
