@@ -22,7 +22,7 @@ global STEP_SIZE
 STEP_SIZE= 1.0/1000.0  # 1/ 1kHz
 
 def read_data_window(ready_to_read,ready_to_source,num_events,num_estimations, IP, TCP_PORT, q, count):
-
+    begin= True
     lastTime=0
     try:
         sock= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -38,11 +38,9 @@ def read_data_window(ready_to_read,ready_to_source,num_events,num_estimations, I
                     data= struct.unpack(str1, data)
                 # Keeping just a window of the data
                     if j <= WINDOW_SIZE:
-                        q[count]=q[count][:1]
                         Window.append(data)
                         j+=len(data)
                     else:
-                        q[count]=q[count][:1]
                         Window.append(data)
                 # Popleft will remove all of the data added before
                         Window.popleft()
@@ -58,14 +56,14 @@ def read_data_window(ready_to_read,ready_to_source,num_events,num_estimations, I
                                 try:
                                     #call the breeding function
                                     x1, x2, x3, y1, y2, y3, t12, t23, t31= Breeding(q, count)
-                                    #call the source_localization function
-
-                                    #start this process in parallel
-                                    u, i = source_localization(np.array([5., 5.]),x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol=1e-8,maxit=50,epsilon=1e-9)
-                                    print u
-                                    print i
-                                    q[count]= q[count]+ [u]
                                     num_estimations.value+=1
+                                    u, i = source_localization(np.array([5., 5.]),x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol=1e-8,maxit=50,epsilon=1e-4)
+                                    begin=False
+                                    print "estimation: "+ str(u) + " iterations " + str(i) + " sensor: " + str(count)
+                                    if num_estimations.value==num_events.value:
+                                        num_estimations.value-=0
+                                        q[count]= q[count]+[u]
+                             
                                 except:
                                     print "Breeding/Source Localization failed on sensor %s" %count               
                 except:
@@ -125,10 +123,10 @@ def Breeding(q, count):
     ss2= q[pair[0]][1]
     ss3= q[pair[1]][1]
     
-    t12= np.correlate(np.asarray(ss1, dtype=np.float64).flatten(),np.asarray(ss2, dtype=np.float64).flatten())
-    t23= np.correlate(np.asarray(ss2, dtype=np.float64).flatten(),np.asarray(ss3, dtype=np.float64).flatten())
-    t31= np.correlate(np.asarray(ss3, dtype=np.float64).flatten(),np.asarray(ss1, dtype=np.float64).flatten())
-
+    t12= np.amax(np.correlate(np.asarray(ss1, dtype=np.float64).flatten(),np.asarray(ss2, dtype=np.float64).flatten()))
+    t23= np.amax(np.correlate(np.asarray(ss2, dtype=np.float64).flatten(),np.asarray(ss3, dtype=np.float64).flatten()))
+    t31= np.amax(np.correlate(np.asarray(ss3, dtype=np.float64).flatten(),np.asarray(ss1, dtype=np.float64).flatten()))
+    #print "%s: %s %s %s" %(count, t12, t23, t31)
     return float(x1), float(x2), float(x3), float(y1), float(y2), float(y3), float(t12), float(t23), float(t31)
 
 ##############################################################################
@@ -178,7 +176,7 @@ def J1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u):
 
 ##############################################################################
 
-def source_localization(u0,x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol,maxit,epsilon):
+def source_localization(u0,x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol,maxit,epsilon):
     ###################################################################
     # MODULE FOR SOURCE LOCALIZATION (using Newton-Krylov)
     # -----------------------------------------------------------------
@@ -186,30 +184,32 @@ def source_localization(u0,x1,x2,x3,y1,y2,y3,t12,t23,t31,rtol,maxit,epsilon):
     # Brown (https://github.com/cucs-numpde/class). This is the routine
     #  that will do the source localization given three sensor signals
     ###################################################################
+    if begin:
+        filename= open("testSensor"+str(count)+".txt", "w")
     u= copy.copy(u0)
     Fu= F1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u)
     
     norm0= np.linalg.norm(Fu)
-    enorm_last= np.linalg.norm(u - np.array([1,1],dtype= np.float64))
 
-    # Newton Krylov with GMRES 
+    # Newton-Krylov with GMRES 
     for i in range(maxit):
         def Ju_fd(v): 
            return (F1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u + epsilon*v)  - Fu) / epsilon
-      
-        Ja= splinalg.LinearOperator((len(Fu), len(u)), matvec=Ju_fd) 
-     
-        du, info = splinalg.gmres(Ja, Fu)
-       
-        if info != 0:
-            raise RuntimeError('GMRES failed to converge: {:d}'.format(info))
+
+        Ju= splinalg.LinearOperator((len(Fu), len(u)), matvec=Ju_fd) 
+
+        du, info = splinalg.gmres(Ju, Fu)
+        
         u -= du
-              
+
         Fu= F1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u)
         norm= np.linalg.norm(Fu)
-                 
+        if begin:
+            filename.write(norm)
         if norm < rtol*norm0:
             break
+    if i==maxit-1:
+        u=np.array([0,0])
     return u, i
 
 ##########################################################
