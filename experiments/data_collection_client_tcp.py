@@ -11,6 +11,8 @@ import scipy
 from sympy import *
 import scipy.sparse.linalg as splinalg
 import copy
+from scipy import signal
+
 
 global BUFFER_SIZE
 BUFFER_SIZE=32000
@@ -22,8 +24,8 @@ global STEP_SIZE
 STEP_SIZE= 1.0/1000.0  # 1/ 1kHz
 
 def read_data_window(ready_to_read,ready_to_source,num_events,num_estimations, IP, TCP_PORT, q, count):
+
     begin= True
-    lastTime=0
     try:
         sock= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((IP, TCP_PORT))
@@ -36,40 +38,45 @@ def read_data_window(ready_to_read,ready_to_source,num_events,num_estimations, I
                     data=sock.recv(BUFFER_SIZE)
                     str1= str(len(data)/4) + "f"
                     data= struct.unpack(str1, data)
-                # Keeping just a window of the data
+                    # Keeping just a window of the data
                     if j <= WINDOW_SIZE:
                         Window.append(data)
+                        source_local_done= False
                         j+=len(data)
                     else:
                         Window.append(data)
-                # Popleft will remove all of the data added before
+                        source_local_done=False
+                        # Popleft will remove all of the data added before
                         Window.popleft()
-                # Determine if there was an event happening in the structure
+                    # Determine if there was an event happening in the structure
                     if j >= WINDOW_SIZE:
                         yesno,lastTime= eventDetection(Window, lastTime)
                         if yesno:
                             num_events.value+=1
                             q[count]= q[count] + [Window]
                             q[count]= q[count] + [lastTime]
-                            
+ 
                             if num_events.value>=3:
-                                try:
-                                    #call the breeding function
-                                    x1, x2, x3, y1, y2, y3, t12, t23, t31= Breeding(q, count)
-                                    num_estimations.value+=1
-                                    u, i = source_localization(np.array([5., 5.]),x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol=1e-8,maxit=50,epsilon=1e-4)
+                                #call the breeding function
+                                x1, x2, x3, y1, y2, y3, t12, t23, t31= Breeding(q, count)
+                                num_estimations.value+=1
+
+                                if source_local_done==False:
+
+                                    u, i = source_localization(np.array([5., 5.]),x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol=1e-10,maxit=10,epsilon=1e-4)
                                     begin=False
-                                    print "estimation: "+ str(u) + " iterations " + str(i) + " sensor: " + str(count)
-                                    if num_estimations.value==num_events.value:
-                                        num_estimations.value-=0
-                                        q[count]= q[count]+[u]
+                                    print "estimation: "+ str(u) + " iterations " + str(i) + " sensor: " + str(count) + " t12: "+ str(t12) + " t23: "+ str(t23) + " t31: "+ str(t31)
+                                    time.sleep(1)
+                                    q[count]= q[count][:1]
+                                    source_local_done=True
+                                    
+                                    num_events.value-=1
+                                    num_estimation.value-=1
                              
-                                except:
-                                    print "Breeding/Source Localization failed on sensor %s" %count               
                 except:
                     pass
     except:
-        pass
+        pass 
     
     if 'sock' in locals() or 'sock' in globals():
         sock.close()
@@ -84,12 +91,12 @@ def eventDetection(sensor, lastTime):
 #   events. I will be using the level 1 decomposition 
 #   coefficient. 
 #######################################################
-    sensor= np.array(sensor[0])
-    grad= (sensor[:-1] - sensor[1:])/STEP_SIZE
+    sensor= np.asarray(sensor[0], dtype= np.float64)
+ 
     yesno=False
-    if max(grad)>65:
+    if np.amax(sensor)>0.2:
         newTime= time.clock()
-        if abs(lastTime-newTime)>0.01:
+        if abs(lastTime-newTime)>0.001:
             yesno=True
             lastTime=newTime
     return yesno, lastTime
@@ -122,10 +129,9 @@ def Breeding(q, count):
     ss1= q[count][1]
     ss2= q[pair[0]][1]
     ss3= q[pair[1]][1]
-    
-    t12= np.amax(np.correlate(np.asarray(ss1, dtype=np.float64).flatten(),np.asarray(ss2, dtype=np.float64).flatten()))
-    t23= np.amax(np.correlate(np.asarray(ss2, dtype=np.float64).flatten(),np.asarray(ss3, dtype=np.float64).flatten()))
-    t31= np.amax(np.correlate(np.asarray(ss3, dtype=np.float64).flatten(),np.asarray(ss1, dtype=np.float64).flatten()))
+    t12= np.argmax(signal.correlate(np.asarray(ss1, dtype=np.float64).flatten(),np.asarray(ss2, dtype=np.float64).flatten()))
+    t23= np.argmax(signal.correlate(np.asarray(ss2, dtype=np.float64).flatten(),np.asarray(ss3, dtype=np.float64).flatten()))
+    t31= np.argmax(signal.correlate(np.asarray(ss3, dtype=np.float64).flatten(),np.asarray(ss1, dtype=np.float64).flatten()))
 
     return float(x1), float(x2), float(x3), float(y1), float(y2), float(y3), float(t12), float(t23), float(t31)
 
@@ -184,6 +190,7 @@ def source_localization(u0,x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol,maxit
     # Brown (https://github.com/cucs-numpde/class). This is the routine
     #  that will do the source localization given three sensor signals
     ###################################################################
+
     if begin:
         filename= open("testSensor"+str(count)+".txt", "w")
     u= copy.copy(u0)
@@ -210,6 +217,8 @@ def source_localization(u0,x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol,maxit
             break
     if i==maxit-1:
         u=np.array([0,0])
+    if begin:
+        filename.close()
     return u, i
 
 ##########################################################
