@@ -126,7 +126,7 @@ def Breeding(q, count):
     t12= np.amax(np.correlate(np.asarray(ss1, dtype=np.float64).flatten(),np.asarray(ss2, dtype=np.float64).flatten()))
     t23= np.amax(np.correlate(np.asarray(ss2, dtype=np.float64).flatten(),np.asarray(ss3, dtype=np.float64).flatten()))
     t31= np.amax(np.correlate(np.asarray(ss3, dtype=np.float64).flatten(),np.asarray(ss1, dtype=np.float64).flatten()))
-    #print "%s: %s %s %s" %(count, t12, t23, t31)
+
     return float(x1), float(x2), float(x3), float(y1), float(y2), float(y3), float(t12), float(t23), float(t31)
 
 ##############################################################################
@@ -205,7 +205,7 @@ def source_localization(u0,x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol,maxit
         Fu= F1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u)
         norm= np.linalg.norm(Fu)
         if begin:
-            filename.write(norm)
+            filename.write(repr(norm)+ "\n")
         if norm < rtol*norm0:
             break
     if i==maxit-1:
