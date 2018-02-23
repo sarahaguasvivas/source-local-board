@@ -63,10 +63,10 @@ def read_data_window(ready_to_read,ready_to_source,num_events,num_estimations, I
 
                                 if source_local_done==False:
 
-                                    u, i = source_localization(np.array([5., 5.]),x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol=1e-10,maxit=10,epsilon=1e-4)
+                                    u, i = source_localization(np.array([6., 4.]),x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol=1e-10,maxit=10,epsilon=1e-4)
                                     begin=False
                                     print "estimation: "+ str(u) + " iterations " + str(i) + " sensor: " + str(count) + " t12: "+ str(t12) + " t23: "+ str(t23) + " t31: "+ str(t31)
-                                    time.sleep(1)
+                                    time.sleep(1.5)
                                     q[count]= q[count][:1]
                                     source_local_done=True
                                     
