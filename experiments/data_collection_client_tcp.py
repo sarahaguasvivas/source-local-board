@@ -2,10 +2,8 @@
 import socket
 import sys
 import struct
-from collections import deque
 from multiprocessing import Pool, Manager, Value
 import numpy as np
-#from scipy import signal
 import time
 import scipy
 from sympy import *
@@ -14,69 +12,50 @@ import copy
 from scipy import signal
 
 
-global BUFFER_SIZE
 BUFFER_SIZE=32000
-global WINDOW_SIZE
-WINDOW_SIZE=300
-global NUM_SENSORS
 NUM_SENSORS= 11
-global STEP_SIZE
 STEP_SIZE= 1.0/1000.0  # 1/ 1kHz
 
-def read_data_window(ready_to_read,ready_to_source,num_events,num_estimations, IP, TCP_PORT, q, count):
+def same_events(q, count, cutoff=1.5):
+    last_time = q[count][2] 
+    res = sum([abs(last_time - q[c][2]) < cutoff for c in xrange(NUM_SENSORS)]) - 1
+    return res
 
+def read_data_window(ready_to_read,ready_to_source,IP, TCP_PORT, q, count):
     begin= True
+    sys.stdout.flush()
     try:
         sock= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((IP, TCP_PORT))
-        j=0
-        Window= deque([])
         lastTime=0
         while True:
             while ready_to_read.value:
+                t = time.time()
                 try:
                     data=sock.recv(BUFFER_SIZE)
                     str1= str(len(data)/4) + "f"
-                    data= struct.unpack(str1, data)
-                    # Keeping just a window of the data
-                    if j <= WINDOW_SIZE:
-                        Window.append(data)
-                        source_local_done= False
-                        j+=len(data)
-                    else:
-                        Window.append(data)
-                        source_local_done=False
-                        # Popleft will remove all of the data added before
-                        Window.popleft()
-                    # Determine if there was an event happening in the structure
-                    if j >= WINDOW_SIZE:
-                        yesno,lastTime= eventDetection(Window, lastTime)
-                        if yesno:
-                            num_events.value+=1
-                            q[count]= q[count] + [Window]
-                            q[count]= q[count] + [lastTime]
- 
-                            if num_events.value>=3:
-                                #call the breeding function
-                                x1, x2, x3, y1, y2, y3, t12, t23, t31= Breeding(q, count)
-                                num_estimations.value+=1
+                    Window= struct.unpack(str1, data)
 
-                                if source_local_done==False:
+                    yesno,lastTime= eventDetection(Window, lastTime)
+                    if yesno:
+                        q[count] = q[count][:1] + [Window] + [lastTime]
+                        
+                        if same_events(q,count)>=3:
+                            #call the breeding function
+                            
+                            x1, x2, x3, y1, y2, y3, t12, t23, t31= Breeding(q, count)
 
-                                    u, i = source_localization(np.array([6., 4.]),x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol=1e-10,maxit=10,epsilon=1e-4)
-                                    begin=False
-                                    print "estimation: "+ str(u) + " iterations " + str(i) + " sensor: " + str(count) + " t12: "+ str(t12) + " t23: "+ str(t23) + " t31: "+ str(t31)
-                                    time.sleep(1.5)
-                                    q[count]= q[count][:1]
-                                    source_local_done=True
-                                    
-                                    num_events.value-=1
-                                    num_estimation.value-=1
-                             
-                except:
-                    pass
-    except:
-        pass 
+                            u, i = source_localization(np.array([6., 4.]),x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol=1e-10,maxit=10,epsilon=1e-8)
+                            begin=False
+                            print "estimation: "+ str(u) + " iterations " + str(i) + " sensor: " + str(count) + " t12: "+ str(t12) + " t23: "+ str(t23) + " t31: "+ str(t31)
+                         
+                except Exception as e:
+                    print "source_local failed sensor %s" %count
+                    print str(e)
+
+    except Exception as e:
+        print "connection failed s %s" %count
+        print str(e)
     
     if 'sock' in locals() or 'sock' in globals():
         sock.close()
@@ -91,11 +70,11 @@ def eventDetection(sensor, lastTime):
 #   events. I will be using the level 1 decomposition 
 #   coefficient. 
 #######################################################
-    sensor= np.asarray(sensor[0], dtype= np.float64)
+    sensor= np.asarray(sensor, dtype= np.float64)
  
     yesno=False
     if np.amax(sensor)>0.2:
-        newTime= time.clock()
+        newTime= time.time()
         if abs(lastTime-newTime)>0.001:
             yesno=True
             lastTime=newTime
@@ -117,9 +96,10 @@ def Breeding(q, count):
             if i != count:
                 u= q[i][2]
                 candidates.append(i)
-                potential.append(float(1.0/u)) 
-        except:
-            pass
+                potential.append(1./abs(u-q[count][2])) 
+        except Exception as e:
+            print str(e)
+    
     x1, y1= q[count][0]
     potential=np.array(potential)
     prob = potential/sum(potential)
@@ -129,9 +109,17 @@ def Breeding(q, count):
     ss1= q[count][1]
     ss2= q[pair[0]][1]
     ss3= q[pair[1]][1]
-    t12= np.argmax(signal.correlate(np.asarray(ss1, dtype=np.float64).flatten(),np.asarray(ss2, dtype=np.float64).flatten()))
-    t23= np.argmax(signal.correlate(np.asarray(ss2, dtype=np.float64).flatten(),np.asarray(ss3, dtype=np.float64).flatten()))
-    t31= np.argmax(signal.correlate(np.asarray(ss3, dtype=np.float64).flatten(),np.asarray(ss1, dtype=np.float64).flatten()))
+ 
+    ss1 = np.asarray(ss1, dtype=np.float64).flatten()
+    ss2 = np.asarray(ss2, dtype=np.float64).flatten()
+    ss3 = np.asarray(ss3, dtype=np.float64).flatten()
+    t12= np.argmax(signal.correlate(ss1,ss2))
+    t23= np.argmax(signal.correlate(ss2,ss3))
+    t31= np.argmax(signal.correlate(ss3,ss1))
+
+    #t12= np.argmax(signal.correlate(np.asarray(ss1, dtype=np.float64).flatten(),np.asarray(ss2, dtype=np.float64).flatten()))
+    #t23= np.argmax(signal.correlate(np.asarray(ss2, dtype=np.float64).flatten(),np.asarray(ss3, dtype=np.float64).flatten()))
+    #t31= np.argmax(signal.correlate(np.asarray(ss3, dtype=np.float64).flatten(),np.asarray(ss1, dtype=np.float64).flatten()))
 
     return float(x1), float(x2), float(x3), float(y1), float(y2), float(y3), float(t12), float(t23), float(t31)
 
@@ -190,7 +178,6 @@ def source_localization(u0,x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol,maxit
     # Brown (https://github.com/cucs-numpde/class). This is the routine
     #  that will do the source localization given three sensor signals
     ###################################################################
-
     if begin:
         filename= open("testSensor"+str(count)+".txt", "w")
     u= copy.copy(u0)
@@ -202,11 +189,8 @@ def source_localization(u0,x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol,maxit
     for i in range(maxit):
         def Ju_fd(v): 
            return (F1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u + epsilon*v)  - Fu) / epsilon
-
         Ju= splinalg.LinearOperator((len(Fu), len(u)), matvec=Ju_fd) 
-
         du, info = splinalg.gmres(Ju, Fu)
-        
         u -= du
 
         Fu= F1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u)
@@ -249,27 +233,36 @@ if __name__ == "__main__":
     ESPIPlist[10]='192.168.50.36'
     
     # Position lists
-    q[0]=q[0]+[(12.0, 0.0)]
-    q[1]=q[1]+[(12.0, 4.0)]
-    q[2]=q[2]+[(6.0, 0.0)]
-    q[3]=q[3]+[(0.0,0.0)]
-    q[4]=q[4]+[(0.0, 4.0)]
-    q[5]=q[5]+[(0.0, 8.0)]
-    q[6]=q[6]+[(6.0, 4.0)]
-    q[7]=q[7]+[(6.0, 8.0)]
-    q[8]=q[8]+[(12.0, 8.0)]
-    q[9]=q[9]+[(18.0,0.0)]
-    q[10]=q[10]+[(18.0, 8.0)]
-
+    q[0]=q[0]+[(12.0, 0.0)] + [[]] + [float('inf')]
+    q[1]=q[1]+[(12.0, 4.0)] + [[]]  + [float('inf')]
+    q[2]=q[2]+[(6.0, 0.0)] + [[]]  + [float('inf')]
+    q[3]=q[3]+[(0.0,0.0)] + [[]]  + [float('inf')]
+    q[4]=q[4]+[(0.0, 4.0)] + [[]]  + [float('inf')]
+    q[5]=q[5]+[(0.0, 8.0)] + [[]] + [float('inf')]
+    q[6]=q[6]+[(6.0, 4.0)] + [[]] + [float('inf')]
+    q[7]=q[7]+[(6.0, 8.0)] + [[]] + [float('inf')]
+    q[8]=q[8]+[(12.0, 8.0)] + [[]]  + [float('inf')]
+    q[9]=q[9]+[(18.0,0.0)] + [[]] + [float('inf')]
+    q[10]=q[10]+[(18.0, 8.0)] + [[]] + [float('inf')]
+    
     pool = Pool(processes=NUM_SENSORS)
     ready_to_read= manager.Value('ready_to_read', False)
     ready_to_read.value= False
     ready_to_source= manager.Value('ready_to_source', False)
-    num_events= manager.Value('num_events', 0) 
     num_estimations= manager.Value('num_estimations',0)
+    results = []
     for count in range(NUM_SENSORS):
-        x= pool.apply_async(read_data_window, args=(ready_to_read,ready_to_source,num_events,num_estimations, ESPIPlist[count], TCP_PORT, q, count)) 
+        results.append(
+        pool.apply_async(read_data_window, args=(ready_to_read,ready_to_source,ESPIPlist[count], TCP_PORT, q, count)) 
+        )
+
     pool.close()
     ready_to_read.value= True
-
+    for result in results:
+        result.get()
     pool.join()
+
+
+
+
+
