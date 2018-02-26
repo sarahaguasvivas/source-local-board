@@ -45,7 +45,8 @@ def read_data_window(ready_to_read,ready_to_source,IP, TCP_PORT, q, count):
                             
                             x1, x2, x3, y1, y2, y3, t12, t23, t31= Breeding(q, count)
 
-                            u, i = source_localization(np.array([6., 4.]),x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol=1e-10,maxit=10,epsilon=1e-8)
+                            u, i = source_localization(np.array([9., 5.]),x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol=1e-6,maxit=10,epsilon=1e-4)
+
                             begin=False
                             print "estimation: "+ str(u) + " iterations " + str(i) + " sensor: " + str(count) + " t12: "+ str(t12) + " t23: "+ str(t23) + " t31: "+ str(t31)
                          
@@ -113,9 +114,9 @@ def Breeding(q, count):
     ss1 = np.asarray(ss1, dtype=np.float64).flatten()
     ss2 = np.asarray(ss2, dtype=np.float64).flatten()
     ss3 = np.asarray(ss3, dtype=np.float64).flatten()
-    t12= np.argmax(signal.correlate(ss1,ss2))
-    t23= np.argmax(signal.correlate(ss2,ss3))
-    t31= np.argmax(signal.correlate(ss3,ss1))
+    t12= np.argmax(signal.correlate(ss1,ss2))*STEP_SIZE
+    t23= np.argmax(signal.correlate(ss2,ss3))*STEP_SIZE
+    t31= np.argmax(signal.correlate(ss3,ss1))*STEP_SIZE
 
     #t12= np.argmax(signal.correlate(np.asarray(ss1, dtype=np.float64).flatten(),np.asarray(ss2, dtype=np.float64).flatten()))
     #t23= np.argmax(signal.correlate(np.asarray(ss2, dtype=np.float64).flatten(),np.asarray(ss3, dtype=np.float64).flatten()))
@@ -190,7 +191,7 @@ def source_localization(u0,x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol,maxit
         def Ju_fd(v): 
            return (F1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u + epsilon*v)  - Fu) / epsilon
         Ju= splinalg.LinearOperator((len(Fu), len(u)), matvec=Ju_fd) 
-        du, info = splinalg.gmres(Ju, Fu)
+        du, info = splinalg.gmres(Ju, Fu, x0= u)
         u -= du
 
         Fu= F1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u)
@@ -199,8 +200,8 @@ def source_localization(u0,x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol,maxit
             filename.write(repr(norm)+ "\n")
         if norm < rtol*norm0:
             break
-    if i==maxit-1:
-        u=np.array([0,0])
+   # if i==maxit-1:
+   #     u=np.array([0,0])
     if begin:
         filename.close()
     return u, i
