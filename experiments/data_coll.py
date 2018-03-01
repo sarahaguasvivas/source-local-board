@@ -2,7 +2,7 @@
 import socket
 import sys
 import struct
-from multiprocessing import Pool, Manager, Value
+from multiprocessing import Pool, Manager, Value, Queue
 import numpy as np
 import time
 import scipy
@@ -10,8 +10,6 @@ from sympy import *
 import scipy.sparse.linalg as splinalg
 import copy
 from scipy import signal
-
-
 BUFFER_SIZE=32000
 NUM_SENSORS= 11
 STEP_SIZE= 1.0/2000.0  # 1/ 1kHz
@@ -22,7 +20,8 @@ def same_events(q, count, cutoff=1.5):
     return res
 
 def read_data_window(ready_to_read,ready_to_source,IP, TCP_PORT, q, count):
-    begin= True
+    begin= False
+
     try:
         sock= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((IP, TCP_PORT))
@@ -44,11 +43,10 @@ def read_data_window(ready_to_read,ready_to_source,IP, TCP_PORT, q, count):
                             
                             x1, x2, x3, y1, y2, y3, t12, t23, t31= Breeding(q, count)
 
-                            u, i = source_localization(np.array([9., 5.]),x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol=1e-6,maxit=10,epsilon=1e-6)
-
+                            u, i = source_localization(np.array([1., 1.]),x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol=1e-6,maxit=10,epsilon=1e-8)
                             begin=False
-                            print "estimation: "+ str(u) + " iterations " + str(i) + " sensor: " + str(count) + " t12: "+ str(t12) + " t23: "+ str(t23) + " t31: "+ str(t31)
-                         
+                            print str(u) + "," + str(i) + "," + str(count)
+ 
                 except Exception as e:
                     print "source_local failed sensor %s" %count
                     print str(e)
@@ -244,6 +242,7 @@ if __name__ == "__main__":
     q[10]=q[10]+[(18.0, 8.0)] + [[]] + [float('inf')]
     
     pool = Pool(processes=NUM_SENSORS)
+#    results1= manager.Queue()
     ready_to_read= manager.Value('ready_to_read', False)
     ready_to_read.value= False
     ready_to_source= manager.Value('ready_to_source', False)
