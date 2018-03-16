@@ -12,7 +12,7 @@ import copy
 from scipy import signal
 BUFFER_SIZE=32000
 NUM_SENSORS= 11
-STEP_SIZE= 1.0/2000  # 1/ 2kHz
+STEP_SIZE= 1.0/2000.0  # 1/ 2kHz
 
 def same_events(q, count, cutoff=1.5):
     last_time = q[count][2] 
@@ -33,9 +33,9 @@ def read_data_window(ready_to_read,ready_to_source,IP, TCP_PORT, q, count):
                     data=sock.recv(BUFFER_SIZE)
                     str1= str(len(data)/4) + "f"
                     Window= struct.unpack(str1, data)
-
+                    yesno=False
                     yesno,lastTime= eventDetection(Window, lastTime)
-                    if yesno:
+                    if yesno and count!=2:
                         q[count] = q[count][:1] + [Window] + [lastTime]
                         print "sensor " + str(count) + " detected an event"                        
                         if same_events(q,count)>=3:
@@ -43,20 +43,20 @@ def read_data_window(ready_to_read,ready_to_source,IP, TCP_PORT, q, count):
                             
                             x1, x2, x3, y1, y2, y3, t12, t23, t31= Breeding(q, count)
 
-                            u, i = source_localization(np.array([0.2, 0.1]),x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol=1e-6,maxit=10,epsilon=1e-8)
+                            u, i = source_localization(np.array([0.2, 0.05]),x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol=1e-6,maxit=10,epsilon=1e-8)
                             begin=False
                             if np.linalg.norm(u)!=0:
                                 print "sensor" + str(count)+ " estimated " + str(u)+ " centimeters in " + str(i) + " iterations of JFNK."
  
                 except Exception as e:
                     print "source_local failed sensor %s" %count
-                    print str(e)
+                   # print str(e)
                     pass
 
     except Exception as e:
-        print "connection failed s %s" %count
+        #print "connection failed s %s" %count
         sock.close()
-        print str(e)
+       # print str(e)
     
     if 'sock' in locals() or 'sock' in globals():
         sock.close()
@@ -128,20 +128,24 @@ def Breeding(q, count):
 #      TRIANGULARIZATION STATEMENT EXPRESSION
 #----------------------------------------------------
 def FFF1(x1, x2, x3, y1, y2, y3, t23, t12, t31, x0,y0):
-    d1= ((x1-x0)**2+(y1-y0)**2)**(1./2.)
-    d2= ((x2-x0)**2+(y2-y0)**2)**(1./2.)
-    d3= ((x3-x0)**2+(y3-y0)**2)**(1./2.)
-    return t23*(d1-d2)-t12*(d2-d3)**2+(t31*(d2-d3)-t23*(d3-d1))**2+(t12*(d3-d1)-t31*(d1-d2))**2
+    
+    d1= sqrt((x1-x0)*(x1-x0)+(y1-y0)*(y1-y0))
+    d2= sqrt((x2-x0)*(x2-x0)+(y2-y0)*(y2-y0))
+    d3= sqrt((x3-x0)*(x3-x0)+(y3-y0)*(y3-y0))
+
+    return (t23*(d1-d2)-t12*(d2-d3))**2+(t31*(d2-d3)-t23*(d3-d1))**2+(t12*(d3-d1)-t31*(d1-d2))**2
 #----------------------------------------------------
 # EXPRESSION TO OPTIMIZE(DX and DY DERIVATIVES OF EXPRESSION ABOVE)
 #-----------------------------------------------------
 def F1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u):
     x0= Symbol('x0')
     y0= Symbol('y0')
+    
     dFdx = (FFF1(x1, x2, x3, y1, y2, y3, t23, t12, t31, x0,y0)).diff(x0)
     dFdy = (FFF1(x1, x2, x3, y1, y2, y3, t23, t12, t31, x0,y0)).diff(y0)
     dx= lambdify((x0,y0),dFdx)
     dy= lambdify((x0,y0),dFdy)
+
     return np.array([dx(u[0],u[1]),dy(u[0],u[1])])
 #----------------------------------------------------
 # JACOBIAN OF THE EXPRESSION TO OPTIMIZE (HESSIAN OF FFF1)
@@ -179,7 +183,7 @@ def source_localization(u0,x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol,maxit
         filename= open("testSensor"+str(count)+".txt", "w")
     u= copy.copy(u0)
     Fu= F1(x1, x2, x3, y1, y2, y3, t23, t12, t31, u)
-    
+ 
     norm0= np.linalg.norm(Fu)
 
     # Newton-Krylov with GMRES 
@@ -196,8 +200,6 @@ def source_localization(u0,x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol,maxit
             filename.write(repr(norm)+ "\n")
         if norm < rtol*norm0:
             break
-    if i==maxit-1 and np.linalg.norm(abs(u))>1:
-        u= np.array([0,0])
     if begin:
         filename.close()
     return u, i
