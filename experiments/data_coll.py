@@ -12,7 +12,7 @@ import copy
 from scipy import signal
 BUFFER_SIZE=32000
 NUM_SENSORS= 11
-STEP_SIZE= 1.0/1000.0  # 1/ 2kHz
+STEP_SIZE= 1.0/2000.0  # 1/ 2kHz
 
 def same_events(q, count, cutoff=1.5):
     last_time = q[count][2] 
@@ -43,7 +43,7 @@ def read_data_window(ready_to_read,ready_to_source,IP, TCP_PORT, q, count):
                             
                             x1, x2, x3, y1, y2, y3, t12, t23, t31= Breeding(q, count)
 
-                            u, i = source_localization(np.array([0.2, 0.1]),x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol=1e-6,maxit=10,epsilon=1e-10)
+                            u, i = source_localization(np.array([0.2, 0.1]),x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol=1e-6,maxit=10,epsilon=5e-8)
                             begin=False
                             if np.linalg.norm(u)!=0:
                                 print "sensor" + str(count)+ " estimated " + str(u*100)+ " centimeters in " + str(i) + " iterations of JFNK."
