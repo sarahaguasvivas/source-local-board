@@ -10,9 +10,9 @@ from sympy import *
 import scipy.sparse.linalg as splinalg
 import copy
 from scipy import signal
-BUFFER_SIZE=32000
+BUFFER_SIZE=3000
 NUM_SENSORS= 11
-STEP_SIZE= 1.0/2000.0  # 1/ 2kHz
+STEP_SIZE= 1.0/1.0 
 
 def same_events(q, count, cutoff=1.5):
     last_time = q[count][2] 
@@ -35,7 +35,7 @@ def read_data_window(ready_to_read,ready_to_source,IP, TCP_PORT, q, count):
                     Window= struct.unpack(str1, data)
                     yesno=False
                     yesno,lastTime= eventDetection(Window, lastTime)
-                    if yesno and count!=2:
+                    if yesno:
                         q[count] = q[count][:1] + [Window] + [lastTime]
                         print "sensor " + str(count) + " detected an event"                        
                         if same_events(q,count)>=3:
@@ -43,7 +43,7 @@ def read_data_window(ready_to_read,ready_to_source,IP, TCP_PORT, q, count):
                             
                             x1, x2, x3, y1, y2, y3, t12, t23, t31= Breeding(q, count)
 
-                            u, i = source_localization(np.array([0.2, 0.1]),x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol=1e-6,maxit=10,epsilon=5e-8)
+                            u, i = source_localization(np.array([0.20, 0.10]),x1,x2,x3,y1,y2,y3,t12,t23,t31,begin, count,rtol=1e-5,maxit=10,epsilon=5e-7)
                             begin=False
                             if np.linalg.norm(u)!=0:
                                 print "sensor" + str(count)+ " estimated " + str(u*100)+ " centimeters in " + str(i) + " iterations of JFNK."
@@ -74,9 +74,9 @@ def eventDetection(sensor, lastTime):
     sensor= np.asarray(sensor, dtype= np.float64)
  
     yesno=False
-    if np.amax(sensor)>0.2:
+    if np.amax(sensor)>0.6:
         newTime= time.time()
-        if abs(lastTime-newTime)>0.001:
+        if abs(lastTime-newTime)>0.00001:
             yesno=True
             lastTime=newTime
     return yesno, lastTime
