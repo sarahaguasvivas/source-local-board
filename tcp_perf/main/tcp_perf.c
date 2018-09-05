@@ -107,7 +107,7 @@ void send_data(void *pvParameters)
             // tcp_buffer is the byte array we need to send
 
             // How many bytes in tcp_buffer?
-            int tcp_buffer_size = WINDOW_SIZE * NUM_ADC * sizeof(float);
+            int tcp_buffer_size = WINDOW_SIZE * (NUM_ADC) * sizeof(float);
             int to_write = tcp_buffer_size;
 
             //send function
