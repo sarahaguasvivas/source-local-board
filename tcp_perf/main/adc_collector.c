@@ -20,8 +20,9 @@
 
 // The data buffer will consist of 8 bytes of data for each entry in the buffer (4 sensors, 16-bit values)
 // The data is stored ADC0, ADC1, ADC2, ADC3
-#define ADC_6   ADC1_CHANNEL_6
-
+#define ADC_5   ADC1_CHANNEL_5
+#define ADC_6 	ADC1_CHANNEL_6
+#define ADC_7	ADC1_CHANNEL_7
 
 static void timer_isr(void* arg)
 {
@@ -85,15 +86,19 @@ void init_adcs()
 
 void measure_adcs()
 {
-	uint32_t adc0_val;
+	uint32_t adc0_val, adc1_val, adc2_val;
 
 	// Measure the ADCs
-	adc0_val = adc1_get_raw(ADC_6);
+	adc0_val = adc1_get_raw(ADC_5);
+	adc1_val = adc1_get_raw(ADC_6);
+	adc2_val = adc1_get_raw(ADC_7);
 
 	// Write to the meaurement window
 	buffer[buffer_idx][0] = (uint16_t) adc0_val;
+	buffer[buffer_idx][1] = (uint16_t) adc1_val;
+	buffer[buffer_idx][2] = (uint16_t) adc2_val;
 
-	buffer_idx += 1;
+	buffer_idx += NUM_ADC;
 	if(buffer_idx >= WINDOW_SIZE)
 	{
 		buffer_full = true;

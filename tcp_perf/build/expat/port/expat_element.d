@@ -1,78 +1,78 @@
 port/expat_element.o: \
- /Users/sarahaguasvivas/esp/esp-idf/components/expat/port/expat_element.c \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/stdio.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/_ansi.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/newlib.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/config.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/ieeefp.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/features.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/esp32/include/xtensa/config/core-isa.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/cdefs.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/_default_types.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/reent.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/_ansi.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/_types.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/_types.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/lock.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/types.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/types.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/sched.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/stdio.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/stdlib.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/stdlib.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/alloca.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/string.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/string.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/expat/include/expat/expat.h \
- /Users/sarahaguasvivas/esp/esp-idf/components/expat/include/expat/expat_external.h
+ /home/sarahaguasvivas/esp/esp-idf/components/expat/port/expat_element.c \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/stdio.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/_ansi.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/newlib.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/config.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/ieeefp.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/features.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/esp32/include/xtensa/config/core-isa.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/cdefs.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/_default_types.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/reent.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/_ansi.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/_types.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/_types.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/lock.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/types.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/types.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/sched.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/stdio.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/stdlib.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/stdlib.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/alloca.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/string.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/string.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/expat/include/expat/expat.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/expat/include/expat/expat_external.h
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/stdio.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/stdio.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/_ansi.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/_ansi.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/newlib.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/newlib.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/config.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/config.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/ieeefp.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/ieeefp.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/features.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/features.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/esp32/include/xtensa/config/core-isa.h:
+/home/sarahaguasvivas/esp/esp-idf/components/esp32/include/xtensa/config/core-isa.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/cdefs.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/cdefs.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/_default_types.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/_default_types.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/reent.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/reent.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/_ansi.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/_ansi.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/_types.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/_types.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/_types.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/_types.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/lock.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/lock.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/types.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/types.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/types.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/types.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/sched.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/sched.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/stdio.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/stdio.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/stdlib.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/stdlib.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/stdlib.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/stdlib.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/alloca.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/alloca.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/string.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/string.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/string.h:
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/string.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/expat/include/expat/expat.h:
+/home/sarahaguasvivas/esp/esp-idf/components/expat/include/expat/expat.h:
 
-/Users/sarahaguasvivas/esp/esp-idf/components/expat/include/expat/expat_external.h:
-/Users/sarahaguasvivas/esp/esp-idf/components/expat/port/expat_element.c:
+/home/sarahaguasvivas/esp/esp-idf/components/expat/include/expat/expat_external.h:
+/home/sarahaguasvivas/esp/esp-idf/components/expat/port/expat_element.c:
