@@ -85,9 +85,13 @@ adc_collector.o: \
  /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/limits.h \
  /home/sarahaguasvivas/esp/esp-idf/components/freertos/include/freertos/list.h \
  /home/sarahaguasvivas/esp/esp-idf/components/freertos/include/freertos/queue.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/spi_flash/include/esp_spi_flash.h \
  /home/sarahaguasvivas/esp/esp-idf/components/esp_adc_cal/include/esp_adc_cal.h \
  /home/sarahaguasvivas/esp/esp-idf/components/driver/include/driver/adc.h \
  /home/sarahaguasvivas/esp/esp-idf/components/soc/esp32/include/soc/adc_channel.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/time.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/time.h \
+ /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/time.h \
  /home/sarahaguasvivas/esp/esp-idf/source-local-board/tcp_perf/main/adc_collector.h
 
 /home/sarahaguasvivas/esp/esp-idf/components/esp32/include/esp_intr_alloc.h:
@@ -260,11 +264,19 @@ adc_collector.o: \
 
 /home/sarahaguasvivas/esp/esp-idf/components/freertos/include/freertos/queue.h:
 
+/home/sarahaguasvivas/esp/esp-idf/components/spi_flash/include/esp_spi_flash.h:
+
 /home/sarahaguasvivas/esp/esp-idf/components/esp_adc_cal/include/esp_adc_cal.h:
 
 /home/sarahaguasvivas/esp/esp-idf/components/driver/include/driver/adc.h:
 
 /home/sarahaguasvivas/esp/esp-idf/components/soc/esp32/include/soc/adc_channel.h:
+
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/time.h:
+
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/time.h:
+
+/home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/time.h:
 
 /home/sarahaguasvivas/esp/esp-idf/source-local-board/tcp_perf/main/adc_collector.h:
 /home/sarahaguasvivas/esp/esp-idf/source-local-board/tcp_perf/main/./adc_collector.c:

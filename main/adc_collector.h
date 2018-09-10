@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #define WINDOW_SIZE		2000
-#define NUM_ADC			3	
+#define NUM_ADC			2	
 
 #define V_REF			1100
 

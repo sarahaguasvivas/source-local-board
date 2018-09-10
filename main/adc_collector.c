@@ -80,7 +80,6 @@ void init_adcs()
 	adc1_config_width(ADC_WIDTH_BIT_12);
 	adc1_config_channel_atten(ADC_5, ADC_ATTEN_DB_0);
 	adc1_config_channel_atten(ADC_6, ADC_ATTEN_DB_0);
-	adc1_config_channel_atten(ADC_7, ADC_ATTEN_DB_0);
 
 //	esp_adc_cal_get_characteristics(V_REF, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, &adc_characteristics);
 }
@@ -93,12 +92,10 @@ void measure_adcs()
 	// Measure the ADCs
 	adc0_val = adc1_get_raw(ADC_5);
 	adc1_val = adc1_get_raw(ADC_6);
-	adc2_val = adc1_get_raw(ADC_7);
 	
 	// Write to the meaurement window
 	buffer[buffer_idx][0] = (uint16_t) adc0_val;
 	buffer[buffer_idx+1][0] = (uint16_t) adc1_val;
-	buffer[buffer_idx+2][0] = (uint16_t) adc2_val;
 	
 	buffer_idx += NUM_ADC;
 	if(buffer_idx >= WINDOW_SIZE)

@@ -9,20 +9,16 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "esp_system.h"
-
+#include "esp_spi_flash.h"
 #include "esp_adc_cal.h"
 
 #include "driver/gpio.h"
 #include "driver/adc.h"
-
-#include "adc_collector.h"
-
-
-// The data buffer will consist of 8 bytes of data for each entry in the buffer (4 sensors, 16-bit values)
-// The data is stored ADC0, ADC1, ADC2, ADC3
+#include "time.h"
+#include "sys/time.h" 
+#include "adc_collector.h" // The data buffer will consist of 8 bytes of data for each entry in the buffer (4 sensors, 16-bit values) // The data is stored ADC0, ADC1, ADC2, ADC3
 #define ADC_5   ADC1_CHANNEL_5
 #define ADC_6 	ADC1_CHANNEL_6
-#define ADC_7	ADC1_CHANNEL_7
 
 static void timer_isr(void* arg)
 {
@@ -72,6 +68,7 @@ void init_buffer()
     // We start at index 0, and the buffer isn't full yet.
 	buffer_idx = 0;
 	buffer_full = false;
+//	buffer_onetwo= true;
 }
 
 
@@ -80,8 +77,6 @@ void init_adcs()
 	adc1_config_width(ADC_WIDTH_BIT_12);
 	adc1_config_channel_atten(ADC_5, ADC_ATTEN_DB_11);
 	adc1_config_channel_atten(ADC_6, ADC_ATTEN_DB_11);
-	adc1_config_channel_atten(ADC_7, ADC_ATTEN_DB_11);
-
 
 //	esp_adc_cal_get_characteristics(V_REF, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, &adc_characteristics);
 }
@@ -89,19 +84,18 @@ void init_adcs()
 
 void measure_adcs()
 {
-	uint32_t adc0_val, adc1_val, adc2_val;
+// ESP_LOGI(TAG, "got ip:%s\n",
+// 60                  ip4addr_ntoa(&event->event_info.got_ip.ip_info.ip)); 
+	uint32_t adc0_val, adc1_val;
 
 	// Measure the ADCs
 	adc0_val = adc1_get_raw(ADC_5);
 	adc1_val = adc1_get_raw(ADC_6);
-	adc2_val = adc1_get_raw(ADC_7);
 
-	// Write to the meaurement window
-	buffer[buffer_idx][0] = 10*4096.0;
-	buffer[buffer_idx][1] = (uint16_t) adc0_val;
-	buffer[buffer_idx][2] = (uint16_t) adc1_val;
-	buffer[buffer_idx][3] = (uint16_t) adc2_val;
-
+	// Write to the mesaurement window
+	buffer[buffer_idx][0] = (uint16_t) adc0_val;
+	buffer[buffer_idx][1] = (uint16_t) adc1_val;
+	
 	buffer_idx += NUM_ADC;
 	if(buffer_idx >= WINDOW_SIZE)
 	{
