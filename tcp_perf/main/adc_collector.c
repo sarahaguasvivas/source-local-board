@@ -19,6 +19,8 @@
 #include "adc_collector.h" // The data buffer will consist of 8 bytes of data for each entry in the buffer (4 sensors, 16-bit values) // The data is stored ADC0, ADC1, ADC2, ADC3
 #define ADC_5   ADC1_CHANNEL_5
 #define ADC_6 	ADC1_CHANNEL_6
+#define ADC_7 	ADC1_CHANNEL_7
+#define ADC_4	ADC1_CHANNEL_4
 
 static void timer_isr(void* arg)
 {
@@ -75,8 +77,10 @@ void init_buffer()
 void init_adcs()
 {
 	adc1_config_width(ADC_WIDTH_BIT_12);
+	adc1_config_channel_atten(ADC_4, ADC_ATTEN_DB_11);
 	adc1_config_channel_atten(ADC_5, ADC_ATTEN_DB_11);
 	adc1_config_channel_atten(ADC_6, ADC_ATTEN_DB_11);
+	adc1_config_channel_atten(ADC_7, ADC_ATTEN_DB_11);
 
 //	esp_adc_cal_get_characteristics(V_REF, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, &adc_characteristics);
 }
@@ -86,15 +90,19 @@ void measure_adcs()
 {
 // ESP_LOGI(TAG, "got ip:%s\n",
 // 60                  ip4addr_ntoa(&event->event_info.got_ip.ip_info.ip)); 
-	uint32_t adc0_val, adc1_val;
+	uint32_t adc0_val, adc1_val, adc2_val, adc3_val;
 
 	// Measure the ADCs
-	adc0_val = adc1_get_raw(ADC_5);
-	adc1_val = adc1_get_raw(ADC_6);
+	adc0_val= adc1_get_raw(ADC_4);
+	adc1_val = adc1_get_raw(ADC_5);
+	adc2_val = adc1_get_raw(ADC_6);
+	adc3_val = adc1_get_raw(ADC_7);
 
 	// Write to the mesaurement window
 	buffer[buffer_idx][0] = (uint16_t) adc0_val;
 	buffer[buffer_idx][1] = (uint16_t) adc1_val;
+	buffer[buffer_idx][2] = (uint16_t) adc2_val;
+	buffer[buffer_idx][3] = (uint16_t) adc3_val;
 	
 	buffer_idx += NUM_ADC;
 	if(buffer_idx >= WINDOW_SIZE)

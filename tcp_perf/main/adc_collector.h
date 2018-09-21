@@ -5,12 +5,12 @@
 extern "C" {
 #endif
 
-#define WINDOW_SIZE		500
-#define NUM_ADC			2 //it is actually 3 adcs and one flag	
-#define V_REF			1100
+#define WINDOW_SIZE		250	
+#define NUM_ADC			4 //it is actually 3 adcs and one flag	
+#define V_REF			1200
 #include "esp_adc_cal.h"
 
-volatile uint16_t buffer[2*WINDOW_SIZE][NUM_ADC];
+volatile uint16_t buffer[WINDOW_SIZE][NUM_ADC];
 
 float* data_buffer;//4B
 char* tcp_buffer;//1B

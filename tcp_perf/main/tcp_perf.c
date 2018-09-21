@@ -98,7 +98,7 @@ void send_data(void *pvParameters)
                 for(int j=0; j<NUM_ADC; j++)
                 {
                     // Convert the ADC to a float between 0.0 and 1.0
-		   // ESP_LOGI(TAG, "sensor: %d", buffer[i][j]);		
+		    ESP_LOGI(TAG, "sensor%d: %d", j, buffer[i][j]);		
                     int idx = i*NUM_ADC + j;
                     data_buffer[idx] = (float) buffer[i][j] / 4096.0;
                 }
