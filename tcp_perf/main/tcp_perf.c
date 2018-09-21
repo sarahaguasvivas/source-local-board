@@ -19,6 +19,7 @@
 
 #include "tcp_perf.h"
 #include "adc_collector.h"
+#include "event_detection.h"
 
 /* FreeRTOS event group to signal when we are connected to wifi */
 EventGroupHandle_t tcp_event_group;
@@ -98,7 +99,7 @@ void send_data(void *pvParameters)
                 {
                     // Convert the ADC to a float between 0.0 and 1.0
 		  
-		    ESP_LOGI(TAG, "sensor%d: %d, time= %d", j, buffer[i][j], esp_log_timestamp());	
+		    ESP_LOGI(TAG, "sensor%d: %d, gradient= %d", j, buffer[i][j], event_detected);	
                     int idx = i*NUM_ADC + j;
                     data_buffer[idx] = (float) buffer[i][j] / 4096.0;
                 }

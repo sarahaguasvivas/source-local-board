@@ -16,7 +16,7 @@
 #include "time.h"
 #include "sys/time.h" 
 #include "adc_collector.h" // The data buffer will consist of 8 bytes of data for each entry in the buffer (4 sensors, 16-bit values) // The data is stored ADC0, ADC1, ADC2, ADC3
-
+#include "event_detection.h"
 
 #define ADC_5   ADC1_CHANNEL_5
 #define ADC_6 	ADC1_CHANNEL_6
@@ -65,13 +65,12 @@ void init_buffer()
 	data_buffer = (float*) malloc (WINDOW_SIZE * NUM_ADC * sizeof(float));
     // The tcp_send function reads off bytes -- this is an easy way to convert the
     // data_buffer from a float array to a byte array without affect data content
-    tcp_buffer = (char*) data_buffer;
+        tcp_buffer = (char*) data_buffer;
 	
     // We start at index 0, and the buffer isn't full yet.
 	buffer_idx = 0;
 	timer_idx= 0;
 	buffer_full = false;
-//	buffer_onetwo= true;
 }
 
 
@@ -104,13 +103,16 @@ void measure_adcs()
 	buffer[buffer_idx][1] = (uint16_t) adc1_val;
 	buffer[buffer_idx][2] = (uint16_t) adc2_val;
 	buffer[buffer_idx][3] = (uint16_t) adc3_val;
+
 	timer[timer_idx]= esp_log_timestamp();
+
 	timer_idx+=1;
 	buffer_idx += NUM_ADC;
+
 	if(buffer_idx >= WINDOW_SIZE)
 	{
 		buffer_full = true;
-//		detect_event(buffer);
+		detect_event();
 	}
 }
 
