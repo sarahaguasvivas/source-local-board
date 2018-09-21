@@ -92,7 +92,8 @@ adc_collector.o: \
  /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/time.h \
  /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/machine/time.h \
  /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/time.h \
- /home/sarahaguasvivas/esp/esp-idf/source-local-board/tcp_perf/main/adc_collector.h
+ /home/sarahaguasvivas/esp/esp-idf/source-local-board/tcp_perf/main/adc_collector.h \
+ /home/sarahaguasvivas/esp/esp-idf/source-local-board/tcp_perf/main/event_detection.h
 
 /home/sarahaguasvivas/esp/esp-idf/components/esp32/include/esp_intr_alloc.h:
 
@@ -279,4 +280,6 @@ adc_collector.o: \
 /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/sys/time.h:
 
 /home/sarahaguasvivas/esp/esp-idf/source-local-board/tcp_perf/main/adc_collector.h:
+
+/home/sarahaguasvivas/esp/esp-idf/source-local-board/tcp_perf/main/event_detection.h:
 /home/sarahaguasvivas/esp/esp-idf/source-local-board/tcp_perf/main/./adc_collector.c:

@@ -84,21 +84,21 @@ void send_data(void *pvParameters)
     int len = 0;
     vTaskDelay(100 / portTICK_RATE_MS);
     ESP_LOGI(TAG, "start sending...");
-
     while (1) {
 
         // Check if ready to send the terrain class
         if(buffer_full)
         {
             ESP_LOGI(TAG, "Buffer Full...");
-
+	
             // Convert the buffer to floats in the data_buffer
             for(int i=0; i<WINDOW_SIZE; i++)
             {
                 for(int j=0; j<NUM_ADC; j++)
                 {
                     // Convert the ADC to a float between 0.0 and 1.0
-		    ESP_LOGI(TAG, "sensor%d: %d", j, buffer[i][j]);		
+		  
+		    ESP_LOGI(TAG, "sensor%d: %d, time= %d", j, buffer[i][j], esp_log_timestamp());	
                     int idx = i*NUM_ADC + j;
                     data_buffer[idx] = (float) buffer[i][j] / 4096.0;
                 }
@@ -131,6 +131,7 @@ void send_data(void *pvParameters)
             ESP_LOGI(TAG, "Buffer Sent!");    
 
             buffer_idx = 0;
+	    timer_idx= 0;
             buffer_full = false;
         }
         else

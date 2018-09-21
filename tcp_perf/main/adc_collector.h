@@ -9,14 +9,16 @@ extern "C" {
 #define NUM_ADC			4 //it is actually 3 adcs and one flag	
 #define V_REF			1200
 #include "esp_adc_cal.h"
-
+#include "event_detection.h"
 volatile uint16_t buffer[WINDOW_SIZE][NUM_ADC];
+volatile uint16_t timer[WINDOW_SIZE];
 
 float* data_buffer;//4B
 char* tcp_buffer;//1B
 
 volatile int buffer_idx;
 volatile bool buffer_full;
+volatile int timer_idx;
 static intr_handle_t s_timer_handle;
 volatile uint32_t timer_click_count;
 

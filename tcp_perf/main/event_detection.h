@@ -5,13 +5,7 @@
 extern "C" {
 #endif
 
-#include "esp_adc_cal.h"
+volatile int event_detected;
 
-volatile uint16_t intense;
-
-volatile bool yesno;
-
-volatile uint32_t timer_click_count;
-
-void detect_event(float * signal);
+void detect_event();
 #endif

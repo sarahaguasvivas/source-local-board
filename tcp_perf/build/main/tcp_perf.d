@@ -134,7 +134,8 @@ tcp_perf.o: \
  /home/sarahaguasvivas/esp/esp-idf/source-local-board/tcp_perf/main/adc_collector.h \
  /home/sarahaguasvivas/esp/esp-idf/components/esp_adc_cal/include/esp_adc_cal.h \
  /home/sarahaguasvivas/esp/esp-idf/components/driver/include/driver/adc.h \
- /home/sarahaguasvivas/esp/esp-idf/components/soc/esp32/include/soc/adc_channel.h
+ /home/sarahaguasvivas/esp/esp-idf/components/soc/esp32/include/soc/adc_channel.h \
+ /home/sarahaguasvivas/esp/esp-idf/source-local-board/tcp_perf/main/event_detection.h
 
 /home/sarahaguasvivas/esp/esp-idf/components/newlib/include/string.h:
 
@@ -405,4 +406,6 @@ tcp_perf.o: \
 /home/sarahaguasvivas/esp/esp-idf/components/driver/include/driver/adc.h:
 
 /home/sarahaguasvivas/esp/esp-idf/components/soc/esp32/include/soc/adc_channel.h:
+
+/home/sarahaguasvivas/esp/esp-idf/source-local-board/tcp_perf/main/event_detection.h:
 /home/sarahaguasvivas/esp/esp-idf/source-local-board/tcp_perf/main/./tcp_perf.c:
