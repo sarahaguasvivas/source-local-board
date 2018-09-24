@@ -15,6 +15,7 @@ volatile uint16_t timer[WINDOW_SIZE];
 
 float* data_buffer;//4B
 char* tcp_buffer;//1B
+//float * timer;
 
 volatile int buffer_idx;
 volatile bool buffer_full;
