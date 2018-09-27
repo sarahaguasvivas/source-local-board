@@ -10,13 +10,11 @@ extern "C" {
 #define V_REF			1200
 #include "esp_adc_cal.h"
 //#include "event_detection.h"
-volatile int16_t buffer[2*WINDOW_SIZE][NUM_ADC];
-volatile uint32_t timer[WINDOW_SIZE];
+volatile uint16_t buffer[WINDOW_SIZE][NUM_ADC];
 volatile float gradient;
 volatile bool event_detected;
 float* data_buffer;//4B
 char* tcp_buffer;//1B
-volatile int buff_idx;
 volatile int buffer_idx;
 volatile bool buffer_full;
 static intr_handle_t s_timer_handle;

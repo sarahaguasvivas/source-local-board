@@ -66,7 +66,6 @@ void init_buffer()
 	
     // We start at index 0, and the buffer isn't full yet.
 	buffer_idx = 0;
-	buff_idx = 0;
 	buffer_full = false;
 }
 
@@ -74,10 +73,10 @@ void init_buffer()
 void init_adcs()
 {
 	adc1_config_width(ADC_WIDTH_BIT_12);
-	adc1_config_channel_atten(ADC_4, ADC_ATTEN_DB_11);
-	adc1_config_channel_atten(ADC_5, ADC_ATTEN_DB_11);
-	adc1_config_channel_atten(ADC_6, ADC_ATTEN_DB_11);
-	adc1_config_channel_atten(ADC_7, ADC_ATTEN_DB_11);
+	adc1_config_channel_atten(ADC_4, ADC_ATTEN_DB_0);
+	adc1_config_channel_atten(ADC_5, ADC_ATTEN_DB_0);
+	adc1_config_channel_atten(ADC_6, ADC_ATTEN_DB_0);
+	adc1_config_channel_atten(ADC_7, ADC_ATTEN_DB_0);
 
 	//esp_adc_cal_get_characteristics(V_REF, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, &adc_characteristics);
 }
@@ -87,7 +86,7 @@ void measure_adcs()
 {
 // ESP_LOGI(TAG, "got ip:%s\n",
 // 60                  ip4addr_ntoa(&event->event_info.got_ip.ip_info.ip)); 
-	int adc0_val, adc1_val, adc2_val, adc3_val;
+	uint16_t adc0_val, adc1_val, adc2_val, adc3_val;
 
 	// Measure the ADCs
 	adc0_val= adc1_get_raw(ADC_4);
@@ -96,10 +95,10 @@ void measure_adcs()
 	adc3_val = adc1_get_raw(ADC_7);
 
 	// Write to the mesaurement window
-	buffer[buffer_idx + buff_idx][0] = (int) adc0_val;
-	buffer[buffer_idx + buff_idx][1] = (int) adc1_val;
-	buffer[buffer_idx + buff_idx][2] = (int) adc2_val;
-	buffer[buffer_idx + buff_idx][3] = (int) adc3_val;
+	buffer[buffer_idx][0] = adc0_val;
+	buffer[buffer_idx][1] = adc1_val;
+	buffer[buffer_idx][2] = adc2_val;
+	buffer[buffer_idx][3] = adc3_val;
 
 	buffer_idx += 1;
 

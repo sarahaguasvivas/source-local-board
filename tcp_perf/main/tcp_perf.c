@@ -99,14 +99,14 @@ void send_data(void *pvParameters)
                 {
                     // Convert the ADC to a float between 0.0 and 1.0
 		    if (i>0){
-			gradient= (float)(buffer[i+buff_idx][j] - buffer[i-1+buff_idx][j])/4096.0;
+			gradient= (float)(buffer[i][j] - buffer[i-1][j])/4096.0;
 	 	    }
 		    else gradient=0;
 		    event_detected = (gradient>0.5 || -gradient>0.5)?true:false;
-		    vTaskDelay(1);	
-		    ESP_LOGI(TAG, "sensor %d: %f, event: %d, gradient: %f", j, (float)buffer[i+buff_idx][j]/4096.0, event_detected, gradient);	
+		    	
+		    ESP_LOGI(TAG, "sensor %d: %f, event: %d, gradient: %f", j, (float)buffer[i][j]/4096.0, event_detected, gradient);	
                     int idx = i*NUM_ADC + j;
-                    data_buffer[idx] = (float) buffer[i+buff_idx][j] / 4096.0;
+                    data_buffer[idx] = (float) buffer[i][j] / 4096.0;
                 }
             }
 
@@ -135,8 +135,6 @@ void send_data(void *pvParameters)
                 }  
             }
             ESP_LOGI(TAG, "Buffer Sent!");    
-	    if (buff_idx > 0) buff_idx=0;
-            else buff_idx = NUM_ADC*WINDOW_SIZE;
 
             buffer_idx = 0;
             buffer_full = false;
