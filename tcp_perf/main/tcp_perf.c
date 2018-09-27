@@ -19,7 +19,7 @@
 
 #include "tcp_perf.h"
 #include "adc_collector.h"
-#include "event_detection.h"
+//#include "event_detection.h"
 
 /* FreeRTOS event group to signal when we are connected to wifi */
 EventGroupHandle_t tcp_event_group;
@@ -85,6 +85,7 @@ void send_data(void *pvParameters)
     int len = 0;
     vTaskDelay(100 / portTICK_RATE_MS);
     ESP_LOGI(TAG, "start sending...");
+    
     while (1) {
 
         // Check if ready to send the terrain class
@@ -95,11 +96,17 @@ void send_data(void *pvParameters)
             // Convert the buffer to floats in the data_buffer
             for(int i=0; i<WINDOW_SIZE; i++)
             {
+		gradient=0;
                 for(int j=0; j<NUM_ADC; j++)
                 {
                     // Convert the ADC to a float between 0.0 and 1.0
-		  
-		    ESP_LOGI(TAG, "sensor%d: %d, event: %d", j, buffer[i][j], event_detected);	
+		    if (i>0){
+			gradient= ((int16_t)buffer[i][j] - (int16_t)buffer[i-1][j]);
+	 	    }
+		    else gradient=0;
+		    event_detected = (gradient>1000 || -gradient>1000)?true:false;
+			
+		    if (event_detected) ESP_LOGI(TAG, "sensor%d: %d, event: %d, gradient: %d, timestamp= %d", j, buffer[i][j], event_detected, gradient, timer[i]);	
                     int idx = i*NUM_ADC + j;
                     data_buffer[idx] = (float) buffer[i][j] / 4096.0;
                 }

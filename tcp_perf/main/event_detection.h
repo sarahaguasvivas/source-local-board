@@ -6,6 +6,6 @@ extern "C" {
 #endif
 
 volatile bool event_detected;
-//volatile float gradient;
+//volatile uint16_t gradient;
 void detect_event();
 #endif

@@ -16,7 +16,7 @@
 #include "time.h"
 #include "sys/time.h" 
 #include "adc_collector.h" // The data buffer will consist of 8 bytes of data for each entry in the buffer (4 sensors, 16-bit values) // The data is stored ADC0, ADC1, ADC2, ADC3
-#include "event_detection.h"
+//#include "event_detection.h"
 
 #define ADC_5   ADC1_CHANNEL_5
 #define ADC_6 	ADC1_CHANNEL_6
@@ -90,7 +90,7 @@ void measure_adcs()
 {
 // ESP_LOGI(TAG, "got ip:%s\n",
 // 60                  ip4addr_ntoa(&event->event_info.got_ip.ip_info.ip)); 
-	uint32_t adc0_val, adc1_val, adc2_val, adc3_val;
+	int adc0_val, adc1_val, adc2_val, adc3_val;
 
 	// Measure the ADCs
 	adc0_val= adc1_get_raw(ADC_4);
@@ -99,10 +99,10 @@ void measure_adcs()
 	adc3_val = adc1_get_raw(ADC_7);
 
 	// Write to the mesaurement window
-	buffer[buffer_idx][0] = (uint16_t) adc0_val;
-	buffer[buffer_idx][1] = (uint16_t) adc1_val;
-	buffer[buffer_idx][2] = (uint16_t) adc2_val;
-	buffer[buffer_idx][3] = (uint16_t) adc3_val;
+	buffer[buffer_idx][0] = (int) adc0_val;
+	buffer[buffer_idx][1] = (int) adc1_val;
+	buffer[buffer_idx][2] = (int) adc2_val;
+	buffer[buffer_idx][3] = (int) adc3_val;
 
 	timer[timer_idx]= esp_log_timestamp();
 
@@ -112,7 +112,6 @@ void measure_adcs()
 	if(buffer_idx >= WINDOW_SIZE)
 	{
 		buffer_full = true;
-		detect_event();
 	}
 }
 
