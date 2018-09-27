@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define WINDOW_SIZE		1000	
+#define WINDOW_SIZE		500	
 #define NUM_ADC			4 //it is actually 3 adcs and one flag	
 #define V_REF			1200
 #include "esp_adc_cal.h"

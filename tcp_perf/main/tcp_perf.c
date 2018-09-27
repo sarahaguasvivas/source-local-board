@@ -103,7 +103,7 @@ void send_data(void *pvParameters)
 	 	    }
 		    else gradient=0;
 		    event_detected = (gradient>0.5 || -gradient>0.5)?true:false;
-			
+		    vTaskDelay(1);	
 		    ESP_LOGI(TAG, "sensor %d: %f, event: %d, gradient: %f", j, (float)buffer[i+buff_idx][j]/4096.0, event_detected, gradient);	
                     int idx = i*NUM_ADC + j;
                     data_buffer[idx] = (float) buffer[i+buff_idx][j] / 4096.0;
