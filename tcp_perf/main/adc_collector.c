@@ -31,10 +31,7 @@ static void timer_isr(void* arg)
 	TIMERG0.hw_timer[0].config.alarm_en = 1;
 	
 	// code which runs in the interrupt	
-	if(!buffer_full)
-	{
-		measure_adcs();
-	}
+	if (!buffer_full) measure_adcs();
 }
 
 // This is going to set up a hardware interrupt.  Again, don't mess with this
@@ -69,7 +66,7 @@ void init_buffer()
 	
     // We start at index 0, and the buffer isn't full yet.
 	buffer_idx = 0;
-	timer_idx= 0;
+	buff_idx = 0;
 	buffer_full = false;
 }
 
@@ -82,7 +79,7 @@ void init_adcs()
 	adc1_config_channel_atten(ADC_6, ADC_ATTEN_DB_11);
 	adc1_config_channel_atten(ADC_7, ADC_ATTEN_DB_11);
 
-//	esp_adc_cal_get_characteristics(V_REF, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, &adc_characteristics);
+	//esp_adc_cal_get_characteristics(V_REF, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, &adc_characteristics);
 }
 
 
@@ -99,15 +96,12 @@ void measure_adcs()
 	adc3_val = adc1_get_raw(ADC_7);
 
 	// Write to the mesaurement window
-	buffer[buffer_idx][0] = (int) adc0_val;
-	buffer[buffer_idx][1] = (int) adc1_val;
-	buffer[buffer_idx][2] = (int) adc2_val;
-	buffer[buffer_idx][3] = (int) adc3_val;
+	buffer[buffer_idx + buff_idx][0] = (int) adc0_val;
+	buffer[buffer_idx + buff_idx][1] = (int) adc1_val;
+	buffer[buffer_idx + buff_idx][2] = (int) adc2_val;
+	buffer[buffer_idx + buff_idx][3] = (int) adc3_val;
 
-	timer[timer_idx]= esp_log_timestamp();
-
-	timer_idx+=1;
-	buffer_idx += NUM_ADC;
+	buffer_idx += 1;
 
 	if(buffer_idx >= WINDOW_SIZE)
 	{

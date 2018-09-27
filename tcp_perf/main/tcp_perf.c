@@ -19,9 +19,7 @@
 
 #include "tcp_perf.h"
 #include "adc_collector.h"
-//#include "event_detection.h"
-
-/* FreeRTOS event group to signal when we are connected to wifi */
+//#include "event_detection.h" /* FreeRTOS event group to signal when we are connected to wifi */
 EventGroupHandle_t tcp_event_group;
 
 /*socket*/
@@ -101,14 +99,14 @@ void send_data(void *pvParameters)
                 {
                     // Convert the ADC to a float between 0.0 and 1.0
 		    if (i>0){
-			gradient= ((int16_t)buffer[i][j] - (int16_t)buffer[i-1][j]);
+			gradient= (float)(buffer[i+buff_idx][j] - buffer[i-1+buff_idx][j])/4096.0;
 	 	    }
 		    else gradient=0;
-		    event_detected = (gradient>1000 || -gradient>1000)?true:false;
+		    event_detected = (gradient>0.5 || -gradient>0.5)?true:false;
 			
-		    if (event_detected) ESP_LOGI(TAG, "sensor%d: %d, event: %d, gradient: %d, timestamp= %d", j, buffer[i][j], event_detected, gradient, timer[i]);	
+		    ESP_LOGI(TAG, "sensor %d: %f, event: %d, gradient: %f", j, (float)buffer[i+buff_idx][j]/4096.0, event_detected, gradient);	
                     int idx = i*NUM_ADC + j;
-                    data_buffer[idx] = (float) buffer[i][j] / 4096.0;
+                    data_buffer[idx] = (float) buffer[i+buff_idx][j] / 4096.0;
                 }
             }
 
@@ -137,9 +135,10 @@ void send_data(void *pvParameters)
                 }  
             }
             ESP_LOGI(TAG, "Buffer Sent!");    
+	    if (buff_idx > 0) buff_idx=0;
+            else buff_idx = NUM_ADC*WINDOW_SIZE;
 
             buffer_idx = 0;
-	    timer_idx= 0;
             buffer_full = false;
         }
         else
@@ -296,9 +295,6 @@ void wifi_init_softap()
     ESP_LOGI(TAG, "wifi_init_softap finished.SSID:%s password:%s \n",
              EXAMPLE_DEFAULT_SSID, EXAMPLE_DEFAULT_PWD);
 }
-
-
-
 
 int get_socket_error_code(int socket)
 {
