@@ -22,6 +22,7 @@
 #define ADC_6 	ADC1_CHANNEL_6
 #define ADC_7 	ADC1_CHANNEL_7
 #define ADC_4	ADC1_CHANNEL_4
+
 static void timer_isr(void* arg)
 {
     // This resets the timer interrupt -- don't mess with this unless you

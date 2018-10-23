@@ -19,7 +19,6 @@
 
 #include "tcp_perf.h"
 #include "adc_collector.h"
-//#include "event_detection.h" /* FreeRTOS event group to signal when we are connected to wifi */
 EventGroupHandle_t tcp_event_group;
 
 /*socket*/
@@ -81,7 +80,7 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
 void send_data(void *pvParameters)
 {
     int len = 0;
-    vTaskDelay(100 / portTICK_RATE_MS);
+    vTaskDelay(10 / portTICK_RATE_MS);
     ESP_LOGI(TAG, "start sending...");
     
     while (1) {
@@ -100,13 +99,11 @@ void send_data(void *pvParameters)
                     // Convert the ADC to a float between 0.0 and 1.0
 		    if (i>0){
 			gradient= (float)(buffer[i][j] - buffer[i-1][j])/4096.0;
-	 	    }
-		    else gradient=0;
-		    event_detected = (gradient>0.5 || -gradient>0.5)?true:false;
-		    	
-		    ESP_LOGI(TAG, "sensor %d: %f, event: %d, gradient: %f", j, (float)buffer[i][j]/4096.0, event_detected, gradient);	
-                    int idx = i*NUM_ADC + j;
-                    data_buffer[idx] = (float) buffer[i][j] / 4096.0;
+	 	    } else gradient=0;
+    	
+		    ESP_LOGI(TAG, "sensor %d: %.4f, event: %.4f", j, (float)buffer[i][j] / 4096.0, gradient);	
+                    int idx = i*(NUM_ADC) + j;
+                    data_buffer[idx] = (float)buffer[i][j] / 4096.0;
                 }
             }
 
@@ -121,6 +118,7 @@ void send_data(void *pvParameters)
             while (to_write > 0) {
                 ESP_LOGI(TAG, "sending data...");
                 len = send(connect_socket, tcp_buffer + (tcp_buffer_size - to_write), to_write, 0);
+                vTaskDelay(1 / portTICK_RATE_MS);
 
                 if (len > 0) {
                     to_write -= len;

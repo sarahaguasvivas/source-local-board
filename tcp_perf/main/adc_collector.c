@@ -20,8 +20,7 @@
 
 #define ADC_5   ADC1_CHANNEL_5
 #define ADC_6 	ADC1_CHANNEL_6
-#define ADC_7 	ADC1_CHANNEL_7
-#define ADC_4	ADC1_CHANNEL_4
+//#define ADC_7 	ADC1_CHANNEL_7
 
 static void timer_isr(void* arg)
 {
@@ -38,8 +37,7 @@ static void timer_isr(void* arg)
 // unless you want to break things, or you know what you're doing.
 void init_timer(int timer_period_us)
 {
-	timer_config_t config = {
-		.alarm_en = true,
+	timer_config_t config = { .alarm_en = true,
 		.counter_en = false,
 		.intr_type = TIMER_INTR_LEVEL,
 		.counter_dir = TIMER_COUNT_UP,
@@ -73,12 +71,11 @@ void init_buffer()
 void init_adcs()
 {
 	adc1_config_width(ADC_WIDTH_BIT_12);
-	adc1_config_channel_atten(ADC_4, ADC_ATTEN_DB_0);
-	adc1_config_channel_atten(ADC_5, ADC_ATTEN_DB_0);
-	adc1_config_channel_atten(ADC_6, ADC_ATTEN_DB_0);
-	adc1_config_channel_atten(ADC_7, ADC_ATTEN_DB_0);
+	adc1_config_channel_atten(ADC_5, ADC_ATTEN_DB_11);
+	adc1_config_channel_atten(ADC_6, ADC_ATTEN_DB_11);
+//	adc1_config_channel_atten(ADC_7, ADC_ATTEN_DB_11);
 
-	//esp_adc_cal_get_characteristics(V_REF, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, &adc_characteristics);
+//	esp_adc_cal_get_characteristics(V_REF, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, &adc_characteristics);
 }
 
 
@@ -86,19 +83,15 @@ void measure_adcs()
 {
 // ESP_LOGI(TAG, "got ip:%s\n",
 // 60                  ip4addr_ntoa(&event->event_info.got_ip.ip_info.ip)); 
-	uint16_t adc0_val, adc1_val, adc2_val, adc3_val;
+	uint16_t adc0_val, adc1_val;//, adc2_val;
 
 	// Measure the ADCs
-	adc0_val= adc1_get_raw(ADC_4);
-	adc1_val = adc1_get_raw(ADC_5);
-	adc2_val = adc1_get_raw(ADC_6);
-	adc3_val = adc1_get_raw(ADC_7);
-
+	adc0_val = adc1_get_raw(ADC_5);
+	adc1_val = adc1_get_raw(ADC_6);	
+	
 	// Write to the mesaurement window
-	buffer[buffer_idx][0] = adc0_val;
-	buffer[buffer_idx][1] = adc1_val;
-	buffer[buffer_idx][2] = adc2_val;
-	buffer[buffer_idx][3] = adc3_val;
+	buffer[buffer_idx][0] = (uint16_t)adc0_val;
+	buffer[buffer_idx][1] = (uint16_t)adc1_val;
 
 	buffer_idx += 1;
 
