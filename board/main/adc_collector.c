@@ -2,8 +2,7 @@
 #include "esp_intr_alloc.h"
 #include "esp_attr.h"
 #include "driver/timer.h"
-#include "esp_log.h"
-#include "esp_err.h"
+#include "esp_log.h" #include "esp_err.h"
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -12,20 +11,15 @@
 #include "esp_spi_flash.h"
 #include "esp_adc_cal.h"
 #include "driver/gpio.h"
-#include "driver/adc.h"
-#include "time.h"
+#include "driver/adc.h" 
+#include "time.h" 
 #include "sys/time.h" 
-#include "adc_collector.h" // The data buffer will consist of 8 bytes of data for each entry in the buffer (4 sensors, 16-bit values) // The data is stored ADC0, ADC1, ADC2, ADC3
-//#include "event_detection.h"
-
-#define ADC_5   ADC1_CHANNEL_5
-#define ADC_6 	ADC1_CHANNEL_6
-//#define ADC_7 	ADC1_CHANNEL_7
-//#define ADC_4	ADC1_CHANNEL_4
-
-static void timer_isr(void* arg)
-{
-    // This resets the timer interrupt -- don't mess with this unless you
+#include "adc_collector.h" // The data buffer will consist of 8 bytes of data for each entry in the buffer (4 sensors, 16-bit values) // The data is stored ADC0, ADC1, ADC2, ADC3 //#include "event_detection.h" 
+#define ADC_0   ADC1_CHANNEL_0 
+#define ADC_1 	ADC1_CHANNEL_1 
+#define ADC_7 	ADC1_CHANNEL_7 
+#define ADC_4	ADC1_CHANNEL_4 
+static void timer_isr(void* arg) { // This resets the timer interrupt -- don't mess with this unless you
     // know what you're doing or want to break things
 	TIMERG0.int_clr_timers.t0 = 1;
 	TIMERG0.hw_timer[0].config.alarm_en = 1;
@@ -59,10 +53,10 @@ void init_timer(int timer_period_us)
 void init_buffer()
 {
     // Want to be able to write to data_buffer as a float
-	data_buffer = (float*) malloc (WINDOW_SIZE * NUM_ADC * sizeof(float));
+	data_buffer = (float*)malloc (WINDOW_SIZE * NUM_ADC * sizeof(float));
     // The tcp_send function reads off bytes -- this is an easy way to convert the
     // data_buffer from a float array to a byte array without affect data content
-        tcp_buffer = (char*) data_buffer;
+        tcp_buffer = (char*)data_buffer;
 	
     // We start at index 0, and the buffer isn't full yet.
 	buffer_idx = 0;
@@ -73,11 +67,11 @@ void init_buffer()
 void init_adcs()
 {
 	adc1_config_width(ADC_WIDTH_BIT_12);
-	adc1_config_channel_atten(ADC_5, ADC_ATTEN_DB_11);
-	adc1_config_channel_atten(ADC_6, ADC_ATTEN_DB_11);
+	adc1_config_channel_atten(ADC_0, ADC_ATTEN_DB_6);
+	adc1_config_channel_atten(ADC_1, ADC_ATTEN_DB_6);
 //	adc1_config_channel_atten(ADC_7, ADC_ATTEN_DB_11);
 //	adc1_config_channel_atten(ADC_4, ADC_ATTEN_DB_11);
-	esp_adc_cal_get_characteristics(V_REF, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, &adc_characteristics);
+	esp_adc_cal_get_characteristics(V_REF, ADC_ATTEN_DB_0, ADC_WIDTH_BIT_12, &adc_characteristics);
 }
 
 
@@ -88,13 +82,13 @@ void measure_adcs()
 	int adc0_val, adc1_val;//, adc2_val, adc3_val;
 
 	// Measure the ADCs
-	adc0_val = adc1_get_raw(ADC_5);
-	adc1_val = adc1_get_raw(ADC_6);
+	adc0_val = adc1_get_raw(ADC_0);
+	adc1_val = adc1_get_raw(ADC_1);
 //	adc2_val = adc1_get_raw(ADC_6);
 //	adc3_val = adc1_get_raw(ADC_7);	
 // Write to the mesaurement window
-	buffer[buffer_idx][0] = adc0_val;
-	buffer[buffer_idx][1] = adc1_val;
+	buffer[buffer_idx][0] = (uint16_t)adc0_val;
+	buffer[buffer_idx][1] = (uint16_t)adc1_val;
 //	buffer[buffer_idx][2] = adc2_val;
 //	buffer[buffer_idx][3] = adc3_val;
 	buffer_idx += 1;

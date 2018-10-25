@@ -77,7 +77,7 @@ void init_adcs()
 	adc1_config_channel_atten(ADC_6, ADC_ATTEN_DB_11);
 	adc1_config_channel_atten(ADC_7, ADC_ATTEN_DB_11);
 	adc1_config_channel_atten(ADC_4, ADC_ATTEN_DB_11);
-	//esp_adc_cal_get_characteristics(V_REF, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, &adc_characteristics);
+ 	esp_adc_cal_get_characteristics(V_REF, ADC_ATTEN_DB_0, ADC_WIDTH_BIT_12, &adc_characteristics);
 }
 
 

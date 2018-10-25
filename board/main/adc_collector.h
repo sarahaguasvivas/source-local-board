@@ -5,9 +5,9 @@
 extern "C" {
 #endif
 
-#define WINDOW_SIZE		500	
+#define WINDOW_SIZE		4000	
 #define NUM_ADC			2 //it is actually 3 adcs and one flag	
-#define V_REF			1200
+#define V_REF			1100
 #include "esp_adc_cal.h"
 //#include "event_detection.h"
 volatile uint16_t buffer[WINDOW_SIZE][NUM_ADC];

@@ -96,13 +96,12 @@ void send_data(void *pvParameters)
                 { // Convert the ADC to a float between 0.0 and 1.0
 		    if (i>0){
 			gradient= (float)(buffer[i][j] - buffer[i-1][j])/4096.0;
-	 	    }
-		    else gradient=0;
+	 	    } else gradient=0;
 		    event_detected = (gradient>0.5 || -gradient>0.5)?true:false;
 		    	
-		    ESP_LOGI(TAG, "sensor %d: %f, event: %d, gradient: %f", j, (float)buffer[i][j]/4096.0, event_detected, gradient);	
+		    ESP_LOGI(TAG, "sensor %d: %f", j, (float)buffer[i][j]/4096.0);	
                     int idx = i*NUM_ADC + j;
-                    data_buffer[idx] = (float) buffer[i][j] / 4096.0;
+                    data_buffer[idx] = (float)buffer[i][j] / 4096.0;
                 }
             }
 
@@ -110,7 +109,7 @@ void send_data(void *pvParameters)
             // tcp_buffer is the byte array we need to send
 
             // How many bytes in tcp_buffer?
-            int tcp_buffer_size = WINDOW_SIZE * (NUM_ADC) * sizeof(float);
+            int tcp_buffer_size = WINDOW_SIZE *(NUM_ADC)* sizeof(float);
             int to_write = tcp_buffer_size;
 
             //send function
